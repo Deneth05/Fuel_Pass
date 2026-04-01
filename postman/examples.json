@@ -1,0 +1,26 @@
+{
+  "citizens": {
+    "create": {
+      "name": "John Doe",
+      "NIC": "123456789V"
+    },
+    "update": {
+      "name": "John Updated"
+    }
+  },
+  "vehicles": {
+    "create": {
+      "citizenId": "REPLACE_WITH_ACTUAL_CITIZEN_ID",
+      "vehicleNumber": "WP-ABC-1234",
+      "fuelType": "Petrol"
+    }
+  },
+  "quotas": {
+    "create": {
+      "vehicleId": "REPLACE_WITH_ACTUAL_VEHICLE_ID",
+      "month": "2026-03",
+      "allocatedLiters": 20.0,
+      "consumedLiters": 0.0
+    }
+  }
+}

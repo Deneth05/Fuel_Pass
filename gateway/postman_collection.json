@@ -1,0 +1,67 @@
+{
+	"info": {
+		"_postman_id": "fuel-pass-gateway",
+		"name": "Fuel Pass API Gateway",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Citizens",
+			"item": [
+				{
+					"name": "Get All Citizens",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/citizens/",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8000",
+							"path": ["citizens", ""]
+						}
+					}
+				},
+				{
+					"name": "Create Citizen",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"John Doe\",\n    \"NIC\": \"123456789V\"\n}"
+						},
+						"url": "http://localhost:8000/citizens/"
+					}
+				}
+			]
+		},
+		{
+			"name": "Queues",
+			"item": [
+				{
+					"name": "Join Queue",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"citizenId\": \"67890\",\n    \"stationId\": \"STN001\",\n    \"vehicleType\": \"Car\"\n}"
+						},
+						"url": "http://localhost:8000/queues/join"
+					}
+				}
+			]
+		}
+	]
+}
