@@ -1,0 +1,136 @@
+{
+	"info": {
+		"_postman_id": "7d9a1b8c-2f3b-4c5d-9e0f-1a2b3c4d5e6f",
+		"name": "Fuel Pass - Transaction Service",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Root",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "List All Transactions",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/transactions/",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"transactions",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Transaction",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"vehicleId\": \"650c1f2e1c4e4a0012345678\",\n    \"stationId\": \"650c1f2e1c4e4a0012345679\",\n    \"fuelType\": \"Petrol 92\",\n    \"litersServed\": 10.5\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/transactions/",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"transactions",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Transactions by Station",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/transactions/station/650c1f2e1c4e4a0012345679",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"transactions",
+						"station",
+						"650c1f2e1c4e4a0012345679"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Transactions by Vehicle",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/transactions/vehicle/650c1f2e1c4e4a0012345678",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"transactions",
+						"vehicle",
+						"650c1f2e1c4e4a0012345678"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8004",
+			"type": "string"
+		}
+	]
+}
