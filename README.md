@@ -45,4 +45,4 @@ Fuel Pass/
    ../venv/Scripts/python main.py
    ```
 4. Access the unified API documentation:
-   - URL: `http://localhost:8000/docs`
+   - URL: `http://localhost:8000/api-docs`
