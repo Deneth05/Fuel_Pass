@@ -1,8 +1,12 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 from bson import ObjectId
 from database.mongo import get_database
 from models.quota import QuotaCreate, QuotaUpdate, QuotaResponse
+from utils.auth import RoleChecker
+
+# Dependency for system admin only
+admin_only = RoleChecker(["system admin"])
 
 router = APIRouter()
 db = get_database()
@@ -13,7 +17,8 @@ vehicle_collection = db["vehicles"]
              response_model=QuotaResponse, 
              status_code=status.HTTP_201_CREATED,
              summary="Create a fuel quota",
-             tags=["Quotas"])
+             tags=["Quotas"],
+             dependencies=[Depends(admin_only)])
 async def create_quota(quota: QuotaCreate):
     """
     Allocate a new fuel quota for a vehicle.
@@ -37,7 +42,8 @@ async def create_quota(quota: QuotaCreate):
 @router.get("/", 
             response_model=List[QuotaResponse],
             summary="List all quotas",
-            tags=["Quotas"])
+            tags=["Quotas"],
+            dependencies=[Depends(admin_only)])
 async def list_quotas():
     """
     Retrieve all fuel quota records.
@@ -50,7 +56,8 @@ async def list_quotas():
 @router.get("/{id}", 
             response_model=QuotaResponse,
             summary="Get quota by ID",
-            tags=["Quotas"])
+            tags=["Quotas"],
+            dependencies=[Depends(admin_only)])
 async def get_quota(id: str):
     """
     Retrieve a specific quota record by its ID.
@@ -68,7 +75,8 @@ async def get_quota(id: str):
 @router.put("/{id}", 
             response_model=QuotaResponse,
             summary="Update quota details",
-            tags=["Quotas"])
+            tags=["Quotas"],
+            dependencies=[Depends(admin_only)])
 async def update_quota(id: str, quota_update: QuotaUpdate):
     """
     Update an existing fuel quota record.
@@ -99,7 +107,8 @@ async def update_quota(id: str, quota_update: QuotaUpdate):
 @router.delete("/{id}", 
                status_code=status.HTTP_204_NO_CONTENT,
                summary="Delete a quota record",
-               tags=["Quotas"])
+               tags=["Quotas"],
+               dependencies=[Depends(admin_only)])
 async def delete_quota(id: str):
     """
     Remove a fuel quota record from the system.
@@ -111,3 +120,61 @@ async def delete_quota(id: str):
     if delete_result.deleted_count == 0:
         raise HTTPException(status_code=404, detail=f"Quota with id {id} not found")
     return None
+
+@router.put("/renew-all", 
+            status_code=status.HTTP_200_OK,
+            summary="Renew all vehicle quotas",
+            tags=["Quotas"],
+            dependencies=[Depends(admin_only)])
+async def renew_all_quotas():
+    """
+    Renew fuel quotas for all registered vehicles.
+    Sets consumedLiters to 0 and updates weekStartDate to the current Sunday.
+    """
+    from utils.quota_manager import get_week_start_date
+    from routers.vehicle_type_quotas import collection as type_quota_collection
+    
+    current_week_start = get_week_start_date()
+    
+    # Get all vehicles
+    vehicles = await vehicle_collection.find().to_list(None)
+    
+    renewed_count = 0
+    for vehicle in vehicles:
+        vehicle_id = str(vehicle["_id"])
+        vehicle_type = vehicle.get("vehicleType")
+        
+        # Get quota amount for this vehicle type
+        type_quota = await type_quota_collection.find_one({"vehicleType": vehicle_type})
+        allocated_liters = 0.0
+        if type_quota:
+            allocated_liters = type_quota["litersPerWeek"]
+        
+        # Check if a quota record already exists for this week
+        existing_quota = await collection.find_one({
+            "vehicleId": vehicle_id,
+            "weekStartDate": current_week_start
+        })
+        
+        if existing_quota:
+            # Refresh existing
+            await collection.update_one(
+                {"_id": existing_quota["_id"]},
+                {"$set": {
+                    "allocatedLiters": allocated_liters,
+                    "consumedLiters": 0.0
+                }}
+            )
+        else:
+            # Create new for the new week
+            new_quota = {
+                "vehicleId": vehicle_id,
+                "weekStartDate": current_week_start,
+                "allocatedLiters": allocated_liters,
+                "consumedLiters": 0.0
+            }
+            await collection.insert_one(new_quota)
+        
+        renewed_count += 1
+        
+    return {"message": f"Successfully renewed quotas for {renewed_count} vehicles", "weekStartDate": current_week_start}

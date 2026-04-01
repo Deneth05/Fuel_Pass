@@ -14,6 +14,7 @@ async def get_transactions():
     """
     Retrieve history of fuel transactions via the gateway.
     """
+    return await service.get_all()
 
 @router.post("/", 
              response_model=TransactionResponse,
@@ -23,3 +24,4 @@ async def create_transaction(transaction: TransactionBase):
     """
     Record a new fuel pumping transaction via the gateway.
     """
+    return await service.create(transaction.model_dump())
