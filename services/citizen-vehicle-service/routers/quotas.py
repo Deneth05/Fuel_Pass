@@ -1,8 +1,12 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 from bson import ObjectId
 from database.mongo import get_database
 from models.quota import QuotaCreate, QuotaUpdate, QuotaResponse
+from utils.auth import RoleChecker
+
+# Dependency for system admin only
+admin_only = RoleChecker(["system admin"])
 
 router = APIRouter()
 db = get_database()
@@ -13,7 +17,8 @@ vehicle_collection = db["vehicles"]
              response_model=QuotaResponse, 
              status_code=status.HTTP_201_CREATED,
              summary="Create a fuel quota",
-             tags=["Quotas"])
+             tags=["Quotas"],
+             dependencies=[Depends(admin_only)])
 async def create_quota(quota: QuotaCreate):
     """
     Allocate a new fuel quota for a vehicle.
@@ -37,7 +42,8 @@ async def create_quota(quota: QuotaCreate):
 @router.get("/", 
             response_model=List[QuotaResponse],
             summary="List all quotas",
-            tags=["Quotas"])
+            tags=["Quotas"],
+            dependencies=[Depends(admin_only)])
 async def list_quotas():
     """
     Retrieve all fuel quota records.
@@ -50,7 +56,8 @@ async def list_quotas():
 @router.get("/{id}", 
             response_model=QuotaResponse,
             summary="Get quota by ID",
-            tags=["Quotas"])
+            tags=["Quotas"],
+            dependencies=[Depends(admin_only)])
 async def get_quota(id: str):
     """
     Retrieve a specific quota record by its ID.
@@ -68,7 +75,8 @@ async def get_quota(id: str):
 @router.put("/{id}", 
             response_model=QuotaResponse,
             summary="Update quota details",
-            tags=["Quotas"])
+            tags=["Quotas"],
+            dependencies=[Depends(admin_only)])
 async def update_quota(id: str, quota_update: QuotaUpdate):
     """
     Update an existing fuel quota record.
@@ -99,7 +107,8 @@ async def update_quota(id: str, quota_update: QuotaUpdate):
 @router.delete("/{id}", 
                status_code=status.HTTP_204_NO_CONTENT,
                summary="Delete a quota record",
-               tags=["Quotas"])
+               tags=["Quotas"],
+               dependencies=[Depends(admin_only)])
 async def delete_quota(id: str):
     """
     Remove a fuel quota record from the system.
@@ -115,7 +124,8 @@ async def delete_quota(id: str):
 @router.put("/renew-all", 
             status_code=status.HTTP_200_OK,
             summary="Renew all vehicle quotas",
-            tags=["Quotas"])
+            tags=["Quotas"],
+            dependencies=[Depends(admin_only)])
 async def renew_all_quotas():
     """
     Renew fuel quotas for all registered vehicles.

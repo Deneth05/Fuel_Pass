@@ -1,9 +1,13 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 from bson import ObjectId
 from database.mongo import get_database
 from models.citizen import CitizenCreate, CitizenUpdate, CitizenResponse
 from datetime import datetime
+from utils.auth import RoleChecker
+
+# Shared role checker for general access
+auth_both = RoleChecker(["system admin", "user"])
 
 router = APIRouter()
 db = get_database()
@@ -32,7 +36,8 @@ async def create_citizen(citizen: CitizenCreate):
 @router.get("/", 
             response_model=List[CitizenResponse],
             summary="List all citizens",
-            tags=["Citizens"])
+            tags=["Citizens"],
+            dependencies=[Depends(auth_both)])
 async def list_citizens():
     """
     Retrieve a list of all registered citizens.
@@ -46,7 +51,8 @@ async def list_citizens():
 @router.get("/{id}", 
             response_model=CitizenResponse,
             summary="Get citizen by ID",
-            tags=["Citizens"])
+            tags=["Citizens"],
+            dependencies=[Depends(auth_both)])
 async def get_citizen(id: str):
     """
     Retrieve details of a specific citizen by their unique database ID.
@@ -64,7 +70,8 @@ async def get_citizen(id: str):
 @router.put("/{id}", 
             response_model=CitizenResponse,
             summary="Update citizen details",
-            tags=["Citizens"])
+            tags=["Citizens"],
+            dependencies=[Depends(auth_both)])
 async def update_citizen(id: str, citizen_update: CitizenUpdate):
     """
     Update information for an existing citizen.
@@ -92,7 +99,8 @@ async def update_citizen(id: str, citizen_update: CitizenUpdate):
 @router.delete("/{id}", 
                status_code=status.HTTP_204_NO_CONTENT,
                summary="Delete a citizen",
-               tags=["Citizens"])
+               tags=["Citizens"],
+               dependencies=[Depends(auth_both)])
 async def delete_citizen(id: str):
     """
     Remove a citizen from the system by their ID.
