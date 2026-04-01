@@ -27,6 +27,12 @@ class TransactionBase(BaseModel):
 class TransactionCreate(TransactionBase):
     pass
 
+class TransactionUpdate(BaseModel):
+    vehicleId: Optional[str] = Field(None, example="650c1f2e1c4e4a0012345678")
+    stationId: Optional[str] = Field(None, example="650c1f2e1c4e4a0012345679")
+    fuelType: Optional[str] = Field(None, example="Petrol 92")
+    litersServed: Optional[float] = Field(None, gt=0, example=10.5)
+
 class Transaction(TransactionBase):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     transactionTime: datetime = Field(default_factory=datetime.utcnow)

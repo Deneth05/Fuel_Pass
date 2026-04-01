@@ -62,3 +62,43 @@ async def get_vehicle_type_quota(vehicle_type: VehicleType):
         raise HTTPException(status_code=404, detail=f"Quota for {vehicle_type} not found")
     quota["_id"] = str(quota["_id"])
     return quota
+
+@router.put("/{vehicle_type}", 
+            response_model=VehicleTypeQuotaResponse,
+            summary="Update an existing vehicle type quota",
+            tags=["Vehicle Type Quotas"],
+            dependencies=[Depends(admin_only)])
+async def update_vehicle_type_quota(vehicle_type: VehicleType, quota_update: VehicleTypeQuotaUpdate):
+    """
+    Update the fuel liters per week for a specific vehicle type.
+    """
+    existing = await collection.find_one({"vehicleType": vehicle_type})
+    if not existing:
+        raise HTTPException(status_code=404, detail=f"Quota for {vehicle_type} not found")
+    
+    update_data = {k: v for k, v in quota_update.model_dump().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No data provided to update")
+        
+    await collection.update_one(
+        {"_id": existing["_id"]},
+        {"$set": update_data}
+    )
+    
+    updated = await collection.find_one({"_id": existing["_id"]})
+    updated["_id"] = str(updated["_id"])
+    return updated
+
+@router.delete("/{vehicle_type}", 
+               status_code=status.HTTP_204_NO_CONTENT,
+               summary="Delete a vehicle type quota",
+               tags=["Vehicle Type Quotas"],
+               dependencies=[Depends(admin_only)])
+async def delete_vehicle_type_quota(vehicle_type: VehicleType):
+    """
+    Remove the quota definition for a specific vehicle type.
+    """
+    result = await collection.delete_one({"vehicleType": vehicle_type})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail=f"Quota for {vehicle_type} not found")
+    return None

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
-from models.transaction import Transaction, TransactionCreate, TransactionResponse
+from models.transaction import Transaction, TransactionCreate, TransactionResponse, TransactionUpdate
 from database.mongo import get_database
 from utils.external_services import (
     validate_vehicle, validate_fuel_stock, update_fuel_stock, 
@@ -61,6 +61,40 @@ async def get_transaction(id: str, db=Depends(get_database)):
     
     transaction["_id"] = str(transaction["_id"])
     return transaction
+
+@router.put("/{id}", response_model=TransactionResponse)
+async def update_transaction(id: str, transaction_update: TransactionUpdate, db=Depends(get_database)):
+    if not ObjectId.is_valid(id):
+        raise HTTPException(status_code=400, detail="Invalid Transaction ID")
+    
+    update_data = {k: v for k, v in transaction_update.model_dump().items() if v is not None}
+    
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+
+    result = await db.transactions.update_one(
+        {"_id": ObjectId(id)},
+        {"$set": update_data}
+    )
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+
+    updated_transaction = await db.transactions.find_one({"_id": ObjectId(id)})
+    updated_transaction["_id"] = str(updated_transaction["_id"])
+    return updated_transaction
+
+@router.delete("/{id}")
+async def delete_transaction(id: str, db=Depends(get_database)):
+    if not ObjectId.is_valid(id):
+        raise HTTPException(status_code=400, detail="Invalid Transaction ID")
+    
+    result = await db.transactions.delete_one({"_id": ObjectId(id)})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    return {"message": "Transaction deleted successfully"}
 
 @router.get("/station/{stationId}", response_model=List[TransactionResponse])
 async def list_by_station(stationId: str, db=Depends(get_database)):

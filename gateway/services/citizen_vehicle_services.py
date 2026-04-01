@@ -72,6 +72,12 @@ class VehicleTypeQuotaService:
     async def create_or_update(self, data: dict):
         return await forward_request("POST", f"{self.BASE_URL}/", json=data)
 
+    async def update(self, vehicle_type: str, data: dict):
+        return await forward_request("PUT", f"{self.BASE_URL}/{vehicle_type}", json=data)
+
+    async def delete(self, vehicle_type: str):
+        return await forward_request("DELETE", f"{self.BASE_URL}/{vehicle_type}")
+
 class AuthService:
     BASE_URL = "http://localhost:8001/auth"
     

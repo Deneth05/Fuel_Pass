@@ -9,9 +9,9 @@ Fuel Pass/
 ├── services/
 │   ├── citizen-vehicle-service/  - Manages citizens, their vehicles, and fuel quotas.
 │   ├── station-service/          - (Planned) Manages fuel stations and stock levels.
-│   ├── transaction-service/      - (Planned) Tracks fuel usage and transactions.
-│   └── queue-service/            - (Planned) Manages fuel pump queues.
-├── gateway/                     - (Planned) API Gateway for routing and authentication.
+│   ├── transaction-service/      - Tracks fuel usage and transactions.
+│   └── queue-service/            - Manages fuel pump queues.
+├── gateway/                     - API Gateway for routing and authentication.
 └── README.md
 ```
 
@@ -30,6 +30,40 @@ Fuel Pass/
    ```bash
    ../../venv/Scripts/python main.py
    ```
+
+### Queue Service
+1. Navigate to the service directory:
+   ```bash
+   cd services/queue-service
+   ```
+2. Install dependencies (using the root virtual environment):
+   ```bash
+   ../../venv/Scripts/pip install -r requirements.txt
+   ```
+3. Run the service:
+   ```bash
+   ../../venv/Scripts/python main.py
+   ```
+4. Service details:
+   - Port: `8003`
+   - Dependency: Requires `Citizen & Vehicle Service` (Port 8001) or `API Gateway` (Port 8000) for vehicle validation.
+
+### Transaction Service
+1. Navigate to the service directory:
+   ```bash
+   cd services/transaction-service
+   ```
+2. Install dependencies (using the root virtual environment):
+   ```bash
+   ../../venv/Scripts/pip install -r requirements.txt
+   ```
+3. Run the service:
+   ```bash
+   ../../venv/Scripts/python main.py
+   ```
+4. Service details:
+   - Port: `8004`
+   - Dependency: Requires `Citizen & Vehicle Service` (Port 8001) or `API Gateway` (Port 8000) for vehicle validation.
 
 ### API Gateway
 1. Navigate to the gateway directory:
