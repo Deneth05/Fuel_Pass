@@ -1,0 +1,109 @@
+{
+	"info": {
+		"_postman_id": "queue-service-collection",
+		"name": "Queue Service",
+		"description": "API collection for testing the Queue microservice.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Add Vehicle to Queue",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"stationId\": \"station_001\",\n    \"vehicleId\": \"vehicle_abc_123\",\n    \"requestedLiters\": 10.5\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8001/queues/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8001",
+					"path": [
+						"queues",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "List All Queues",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8001/queues/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8001",
+					"path": [
+						"queues",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Station Queue (Sorted)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8001/queues/station/station_001",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8001",
+					"path": [
+						"queues",
+						"station",
+						"station_001"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Queue Status (Serve)",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"status\": \"served\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8001/queues/{id}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8001",
+					"path": [
+						"queues",
+						"{id}"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
