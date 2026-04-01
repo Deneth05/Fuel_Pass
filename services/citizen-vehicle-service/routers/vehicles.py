@@ -29,12 +29,31 @@ async def create_vehicle(vehicle: VehicleCreate):
 
     vehicle_dict = vehicle.model_dump()
     result = await collection.insert_one(vehicle_dict)
+    vehicle_id = str(result.inserted_id)
     
     # Update citizen's registeredVehicles list
     await citizen_collection.update_one(
         {"_id": ObjectId(vehicle.citizenId)},
-        {"$push": {"registeredVehicles": str(result.inserted_id)}}
+        {"$push": {"registeredVehicles": vehicle_id}}
     )
+
+    # Auto-assign quota
+    from utils.quota_manager import get_week_start_date
+    from routers.vehicle_type_quotas import collection as type_quota_collection
+    from routers.quotas import collection as quota_collection
+    
+    type_quota = await type_quota_collection.find_one({"vehicleType": vehicle.vehicleType})
+    allocated_liters = 0.0
+    if type_quota:
+        allocated_liters = type_quota["litersPerWeek"]
+    
+    initial_quota = {
+        "vehicleId": vehicle_id,
+        "weekStartDate": get_week_start_date(),
+        "allocatedLiters": allocated_liters,
+        "consumedLiters": 0.0
+    }
+    await quota_collection.insert_one(initial_quota)
     
     created_vehicle = await collection.find_one({"_id": result.inserted_id})
     created_vehicle["_id"] = str(created_vehicle["_id"])

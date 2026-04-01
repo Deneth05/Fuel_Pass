@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routers import citizens, vehicles, quotas
+from routers import citizens, vehicles, quotas, vehicle_type_quotas
 from database.mongo import client
 
 app = FastAPI(
@@ -21,6 +21,7 @@ app = FastAPI(
 app.include_router(citizens.router, prefix="/citizens", tags=["Citizens"])
 app.include_router(vehicles.router, prefix="/vehicles", tags=["Vehicles"])
 app.include_router(quotas.router, prefix="/quotas", tags=["Quotas"])
+app.include_router(vehicle_type_quotas.router, prefix="/vehicle-type-quotas", tags=["Vehicle Type Quotas"])
 
 @app.get("/")
 async def root():
