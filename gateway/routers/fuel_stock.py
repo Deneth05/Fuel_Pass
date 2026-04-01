@@ -1,3 +1,4 @@
+from fastapi import APIRouter
 from services.station_stock_services import FuelStockService
 from models.stock import FuelStockResponse
 
@@ -12,3 +13,4 @@ async def get_station_fuel_stock(station_id: str):
     """
     Check current fuel levels for a specific station via the gateway.
     """
+    return await service.get_by_station(station_id)

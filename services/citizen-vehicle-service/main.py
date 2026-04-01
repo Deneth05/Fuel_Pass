@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routers import citizens, vehicles, quotas, vehicle_type_quotas
+from routers import citizens, vehicles, quotas, vehicle_type_quotas, auth
 from database.mongo import client
 
 app = FastAPI(
@@ -22,6 +22,7 @@ app.include_router(citizens.router, prefix="/citizens", tags=["Citizens"])
 app.include_router(vehicles.router, prefix="/vehicles", tags=["Vehicles"])
 app.include_router(quotas.router, prefix="/quotas", tags=["Quotas"])
 app.include_router(vehicle_type_quotas.router, prefix="/vehicle-type-quotas", tags=["Vehicle Type Quotas"])
+app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 
 @app.get("/")
 async def root():
@@ -36,4 +37,4 @@ async def shutdown_db_client():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=True)

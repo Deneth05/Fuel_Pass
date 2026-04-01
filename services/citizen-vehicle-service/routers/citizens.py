@@ -4,7 +4,7 @@ from bson import ObjectId
 from database.mongo import get_database
 from models.citizen import CitizenCreate, CitizenUpdate, CitizenResponse
 from datetime import datetime
-from utils.auth import RoleChecker
+from utils.auth import RoleChecker, get_password_hash
 
 # Shared role checker for general access
 auth_both = RoleChecker(["system admin", "user"])
@@ -12,26 +12,54 @@ auth_both = RoleChecker(["system admin", "user"])
 router = APIRouter()
 db = get_database()
 collection = db["citizens"]
+user_collection = db["users"]
 
 @router.post("/", 
              response_model=CitizenResponse, 
              status_code=status.HTTP_201_CREATED,
-             summary="Create a new citizen",
+             summary="Create a new citizen and user account",
              tags=["Citizens"])
 async def create_citizen(citizen: CitizenCreate):
     """
-    Register a new citizen in the system.
+    Register a new citizen in the system and create a corresponding user account.
+    The NIC will be used as the system username.
     Initializes an empty list of registered vehicles.
     """
-    citizen_dict = citizen.model_dump()
-    citizen_dict["registeredVehicles"] = []
-    citizen_dict["registeredAt"] = datetime.utcnow()
-    
-    result = await collection.insert_one(citizen_dict)
-    created_citizen = await collection.find_one({"_id": result.inserted_id})
-    # Convert _id to string for the response model which expects str for 'id' aliased from '_id'
-    created_citizen["_id"] = str(created_citizen["_id"])
-    return created_citizen
+    try:
+        # Check if citizen already exists
+        existing_citizen = await collection.find_one({"NIC": citizen.NIC})
+        if existing_citizen:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Citizen with this NIC already exists")
+        
+        # Check if user already exists
+        existing_user = await user_collection.find_one({"username": citizen.NIC})
+        if existing_user:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username (NIC) already taken")
+
+        citizen_dict = citizen.model_dump()
+        password = citizen_dict.pop("password") # Remove password from citizen data
+        
+        # Create User Account
+        user_record = {
+            "username": citizen.NIC,
+            "password": get_password_hash(password),
+            "role": "user"
+        }
+        await user_collection.insert_one(user_record)
+
+        # Create Citizen Record
+        citizen_dict["registeredVehicles"] = []
+        citizen_dict["registeredAt"] = datetime.utcnow()
+        
+        result = await collection.insert_one(citizen_dict)
+        created_citizen = await collection.find_one({"_id": result.inserted_id})
+        # Convert _id to string for the response model
+        created_citizen["_id"] = str(created_citizen["_id"])
+        return created_citizen
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/", 
             response_model=List[CitizenResponse],

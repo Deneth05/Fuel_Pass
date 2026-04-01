@@ -29,6 +29,8 @@ async def forward_request(method: str, url: str, **kwargs):
         except httpx.RequestError as exc:
             logger.error(f"HTTP Request failed: {exc}")
             raise HTTPException(status_code=503, detail=f"Service Unavailable: {str(exc)}")
+        except HTTPException as exc:
+            raise exc
         except Exception as exc:
             logger.error(f"Unexpected error: {exc}")
             raise HTTPException(status_code=500, detail="Internal Gateway Error")

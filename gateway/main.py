@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routers import citizens, vehicles, quotas, stations, fuel_stock, queues, transactions
+from routers import citizens, vehicles, quotas, stations, fuel_stock, queues, transactions, auth, vehicle_type_quotas
 
 app = FastAPI(
     title="Fuel Pass API Gateway",
@@ -25,6 +25,8 @@ app.include_router(stations.router, prefix="/stations", tags=["Stations"])
 app.include_router(fuel_stock.router, prefix="/fuel-stock", tags=["Fuel Stock"])
 app.include_router(queues.router, prefix="/queues", tags=["Queues"])
 app.include_router(transactions.router, prefix="/transactions", tags=["Transactions"])
+app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+app.include_router(vehicle_type_quotas.router, prefix="/vehicle-type-quotas", tags=["Vehicle Type Quotas"])
 
 @app.get("/")
 async def root():

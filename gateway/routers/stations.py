@@ -1,3 +1,4 @@
+from fastapi import APIRouter
 from services.station_stock_services import StationService
 from models.station import StationResponse
 from typing import List
@@ -13,6 +14,7 @@ async def get_stations():
     """
     Retrieve all fuel stations via the gateway.
     """
+    return await service.get_all()
 
 @router.get("/{station_id}", 
             response_model=StationResponse,
@@ -22,3 +24,4 @@ async def get_station(station_id: str):
     """
     Retrieve details of a specific fuel station.
     """
+    return await service.get_by_id(station_id)

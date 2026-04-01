@@ -1,3 +1,4 @@
+from fastapi import APIRouter
 from services.queue_transaction_services import QueueService
 from models.queue import QueueResponse, QueueJoin
 from typing import List
@@ -13,6 +14,7 @@ async def get_queues():
     """
     Retrieve information about all current fuel pump queues.
     """
+    return await service.get_all()
 
 @router.post("/join", 
              response_model=QueueResponse,
@@ -22,3 +24,4 @@ async def join_queue(data: QueueJoin):
     """
     Citizen joins a queue at a specific fuel station.
     """
+    return await service.join(data.model_dump())

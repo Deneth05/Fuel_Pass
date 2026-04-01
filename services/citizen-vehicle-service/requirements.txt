@@ -4,3 +4,4 @@ motor
 pydantic[email]
 python-dotenv
 PyJWT
+passlib[bcrypt]
