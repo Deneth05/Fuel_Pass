@@ -62,7 +62,6 @@ async def get_transaction(id: str, db=Depends(get_database)):
     transaction["_id"] = str(transaction["_id"])
     return transaction
 
-<<<<<<< HEAD
 @router.put("/{id}", response_model=TransactionResponse)
 async def update_transaction(id: str, transaction_update: TransactionUpdate, db=Depends(get_database)):
     if not ObjectId.is_valid(id):
@@ -97,8 +96,6 @@ async def delete_transaction(id: str, db=Depends(get_database)):
     
     return {"message": "Transaction deleted successfully"}
 
-=======
->>>>>>> 1844599557b9da4c48c7d5c9b512f0ebaa53345d
 @router.get("/station/{stationId}", response_model=List[TransactionResponse])
 async def list_by_station(stationId: str, db=Depends(get_database)):
     transactions = await db.transactions.find({"stationId": stationId}).to_list(1000)
