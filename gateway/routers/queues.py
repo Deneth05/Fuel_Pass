@@ -1,3 +1,4 @@
+from fastapi import APIRouter
 from services.queue_transaction_services import QueueService
 from models.queue import QueueResponse, QueueJoin
 from typing import List

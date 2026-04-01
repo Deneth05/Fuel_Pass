@@ -1,3 +1,4 @@
+from fastapi import APIRouter
 from services.citizen_vehicle_services import CitizenService
 from models.citizen import CitizenResponse, CitizenCreate
 from typing import List
