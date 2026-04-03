@@ -6,8 +6,12 @@ from models.citizen import CitizenCreate, CitizenUpdate, CitizenResponse
 from datetime import datetime
 from utils.auth import RoleChecker, get_password_hash
 
-# Shared role checker for general access
-auth_both = RoleChecker(["system admin", "user"])
+# Shared role checkers
+auth_admin = RoleChecker(["admin"])
+auth_citizen = RoleChecker(["citizen"])
+auth_operator = RoleChecker(["station_operator"])
+auth_staff = RoleChecker(["admin", "station_operator"])
+auth_all = RoleChecker(["admin", "station_operator", "citizen"])
 
 router = APIRouter()
 db = get_database()
@@ -43,7 +47,7 @@ async def create_citizen(citizen: CitizenCreate):
         user_record = {
             "username": citizen.NIC,
             "password": get_password_hash(password),
-            "role": "user"
+            "role": "citizen" # Updated role
         }
         await user_collection.insert_one(user_record)
 
@@ -65,7 +69,7 @@ async def create_citizen(citizen: CitizenCreate):
             response_model=List[CitizenResponse],
             summary="List all citizens",
             tags=["Citizens"],
-            dependencies=[Depends(auth_both)])
+            dependencies=[Depends(auth_staff)])
 async def list_citizens():
     """
     Retrieve a list of all registered citizens.
@@ -80,7 +84,7 @@ async def list_citizens():
             response_model=CitizenResponse,
             summary="Get citizen by ID",
             tags=["Citizens"],
-            dependencies=[Depends(auth_both)])
+            dependencies=[Depends(auth_all)])
 async def get_citizen(id: str):
     """
     Retrieve details of a specific citizen by their unique database ID.
@@ -99,7 +103,7 @@ async def get_citizen(id: str):
             response_model=CitizenResponse,
             summary="Update citizen details",
             tags=["Citizens"],
-            dependencies=[Depends(auth_both)])
+            dependencies=[Depends(auth_all)])
 async def update_citizen(id: str, citizen_update: CitizenUpdate):
     """
     Update information for an existing citizen.
@@ -128,7 +132,7 @@ async def update_citizen(id: str, citizen_update: CitizenUpdate):
                status_code=status.HTTP_204_NO_CONTENT,
                summary="Delete a citizen",
                tags=["Citizens"],
-               dependencies=[Depends(auth_both)])
+               dependencies=[Depends(auth_admin)])
 async def delete_citizen(id: str):
     """
     Remove a citizen from the system by their ID.

@@ -6,8 +6,10 @@ from models.vehicle_type_quota import VehicleTypeQuotaCreate, VehicleTypeQuotaUp
 from models.vehicle import VehicleType
 from utils.auth import RoleChecker
 
-# Dependency for system admin only
-admin_only = RoleChecker(["system admin"])
+# Shared role checkers
+auth_admin = RoleChecker(["admin", "manager"])
+auth_staff = RoleChecker(["admin", "manager", "station_operator"])
+auth_all = RoleChecker(["admin", "manager", "station_operator", "citizen"])
 
 router = APIRouter()
 db = get_database()
@@ -18,7 +20,7 @@ collection = db["vehicle_type_quotas"]
              status_code=status.HTTP_201_CREATED,
              summary="Create or update a vehicle type quota",
              tags=["Vehicle Type Quotas"],
-             dependencies=[Depends(admin_only)])
+             dependencies=[Depends(auth_admin)])
 async def create_vehicle_type_quota(quota: VehicleTypeQuotaCreate):
     """
     Define the fuel liters per week for a specific vehicle type.
@@ -44,7 +46,7 @@ async def create_vehicle_type_quota(quota: VehicleTypeQuotaCreate):
             response_model=List[VehicleTypeQuotaResponse],
             summary="List all vehicle type quotas",
             tags=["Vehicle Type Quotas"],
-            dependencies=[Depends(admin_only)])
+            dependencies=[Depends(auth_staff)])
 async def list_vehicle_type_quotas():
     quotas = await collection.find().to_list(100)
     for q in quotas:
@@ -55,7 +57,7 @@ async def list_vehicle_type_quotas():
             response_model=VehicleTypeQuotaResponse,
             summary="Get quota for a specific vehicle type",
             tags=["Vehicle Type Quotas"],
-            dependencies=[Depends(admin_only)])
+            dependencies=[Depends(auth_all)])
 async def get_vehicle_type_quota(vehicle_type: VehicleType):
     quota = await collection.find_one({"vehicleType": vehicle_type})
     if not quota:
@@ -67,7 +69,7 @@ async def get_vehicle_type_quota(vehicle_type: VehicleType):
             response_model=VehicleTypeQuotaResponse,
             summary="Update an existing vehicle type quota",
             tags=["Vehicle Type Quotas"],
-            dependencies=[Depends(admin_only)])
+            dependencies=[Depends(auth_admin)])
 async def update_vehicle_type_quota(vehicle_type: VehicleType, quota_update: VehicleTypeQuotaUpdate):
     """
     Update the fuel liters per week for a specific vehicle type.
@@ -93,7 +95,7 @@ async def update_vehicle_type_quota(vehicle_type: VehicleType, quota_update: Veh
                status_code=status.HTTP_204_NO_CONTENT,
                summary="Delete a vehicle type quota",
                tags=["Vehicle Type Quotas"],
-               dependencies=[Depends(admin_only)])
+               dependencies=[Depends(auth_admin)])
 async def delete_vehicle_type_quota(vehicle_type: VehicleType):
     """
     Remove the quota definition for a specific vehicle type.

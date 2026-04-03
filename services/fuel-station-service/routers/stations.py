@@ -5,6 +5,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from database.mongo import get_database
 from models.station import StationCreate, StationResponse, StationUpdate
+from utils.auth import RoleChecker
+
+# Shared role checkers
+auth_admin = RoleChecker(["admin"])
+auth_all = RoleChecker(["admin", "station_operator", "citizen"])
 
 
 router = APIRouter()
@@ -16,6 +21,7 @@ router = APIRouter()
     status_code=status.HTTP_201_CREATED,
     summary="Create a new station",
     tags=["Stations"],
+    dependencies=[Depends(auth_admin)]
 )
 async def create_station(station: StationCreate, db=Depends(get_database)):
     station_dict = station.model_dump()
@@ -31,6 +37,7 @@ async def create_station(station: StationCreate, db=Depends(get_database)):
     response_model=List[StationResponse],
     summary="List stations",
     tags=["Stations"],
+    dependencies=[Depends(auth_all)]
 )
 async def list_stations(db=Depends(get_database)):
     stations = await db["stations"].find().to_list(1000)
@@ -44,6 +51,7 @@ async def list_stations(db=Depends(get_database)):
     response_model=StationResponse,
     summary="Get a station by ID",
     tags=["Stations"],
+    dependencies=[Depends(auth_all)]
 )
 async def get_station(id: str, db=Depends(get_database)):
     if not ObjectId.is_valid(id):
@@ -62,6 +70,7 @@ async def get_station(id: str, db=Depends(get_database)):
     response_model=StationResponse,
     summary="Update a station by ID",
     tags=["Stations"],
+    dependencies=[Depends(auth_admin)]
 )
 async def update_station(id: str, station_update: StationUpdate, db=Depends(get_database)):
     if not ObjectId.is_valid(id):
@@ -85,6 +94,7 @@ async def update_station(id: str, station_update: StationUpdate, db=Depends(get_
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a station by ID",
     tags=["Stations"],
+    dependencies=[Depends(auth_admin)]
 )
 async def delete_station(id: str, db=Depends(get_database)):
     if not ObjectId.is_valid(id):

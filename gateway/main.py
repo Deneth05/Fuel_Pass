@@ -1,5 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, Request
+from fastapi.security import HTTPBearer
 from routers import citizens, vehicles, quotas, stations, fuel_stock, queues, transactions, auth, vehicle_type_quotas
+from utils.auth import auth_middleware, role_required
+
+security = HTTPBearer()
 
 app = FastAPI(
     title="Fuel Pass API Gateway",
@@ -17,7 +21,17 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# Register routers
+# Apply Auth Middleware
+@app.middleware("http")
+async def add_auth_middleware(request: Request, call_next):
+    return await auth_middleware(request, call_next)
+
+# Register routers with role-based access
+# Admin: full access
+# Citizen: view own profiles, vehicles, join queues
+# Station Operator: read citizens, manage stocks, update queues, record transactions
+
+app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 app.include_router(citizens.router, prefix="/citizens", tags=["Citizens"])
 app.include_router(vehicles.router, prefix="/vehicles", tags=["Vehicles"])
 app.include_router(quotas.router, prefix="/quotas", tags=["Quotas"])
@@ -25,7 +39,6 @@ app.include_router(stations.router, prefix="/stations", tags=["Stations"])
 app.include_router(fuel_stock.router, prefix="/fuel-stock", tags=["Fuel Stock"])
 app.include_router(queues.router, prefix="/queues", tags=["Queues"])
 app.include_router(transactions.router, prefix="/transactions", tags=["Transactions"])
-app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 app.include_router(vehicle_type_quotas.router, prefix="/vehicle-type-quotas", tags=["Vehicle Type Quotas"])
 
 @app.get("/")

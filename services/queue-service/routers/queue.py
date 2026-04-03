@@ -1,25 +1,36 @@
-from fastapi import APIRouter, HTTPException, status, Body
+from fastapi import APIRouter, HTTPException, status, Body, Depends, Request
 from typing import List
 from datetime import datetime, timezone
 from bson import ObjectId
 from database.mongo import get_collection
 from models.queue import QueueCreate, QueueUpdate, QueueResponse, QueueStatus
 from utils.validation import validate_vehicle_and_quota
+from utils.auth import RoleChecker
+
+# Shared role checkers
+auth_admin = RoleChecker(["admin"])
+auth_staff = RoleChecker(["admin", "station_operator"])
+auth_all = RoleChecker(["admin", "station_operator", "citizen"])
 
 router = APIRouter()
 collection = get_collection("queues")
 
+def get_identity_headers(request: Request):
+    return {k: v for k, v in request.headers.items() if k.lower().startswith("x-user-")}
+
 @router.post("/", 
              response_model=QueueResponse, 
              status_code=status.HTTP_201_CREATED,
-             summary="Add vehicle to queue")
-async def add_to_queue(queue_data: QueueCreate):
+             summary="Add vehicle to queue",
+             dependencies=[Depends(auth_all)])
+async def add_to_queue(queue_data: QueueCreate, request: Request):
     """
     Adds a vehicle to a queue at a station.
     Validates vehicle existence and fuel quota before adding.
     """
+    headers = get_identity_headers(request)
     # 1. Validate vehicle and quota from other microservice
-    await validate_vehicle_and_quota(queue_data.vehicleId, queue_data.requestedLiters)
+    await validate_vehicle_and_quota(queue_data.vehicleId, queue_data.requestedLiters, headers=headers)
     
     # 2. Check if vehicle is already in an active queue (waiting status)
     existing = await collection.find_one({
@@ -46,7 +57,8 @@ async def add_to_queue(queue_data: QueueCreate):
 
 @router.get("/", 
             response_model=List[QueueResponse],
-            summary="List all queue entries")
+            summary="List all queue entries",
+            dependencies=[Depends(auth_admin)])
 async def list_queues():
     """
     Retrieve a list of all queue entries across all stations.
@@ -58,7 +70,8 @@ async def list_queues():
 
 @router.get("/station/{stationId}", 
             response_model=List[QueueResponse],
-            summary="Get queue for a station")
+            summary="Get queue for a station",
+            dependencies=[Depends(auth_all)])
 async def get_station_queue(stationId: str):
     """
     Retrieve the current queue for a specific station,
@@ -71,7 +84,8 @@ async def get_station_queue(stationId: str):
 
 @router.get("/{id}", 
             response_model=QueueResponse,
-            summary="Get queue entry by ID")
+            summary="Get queue entry by ID",
+            dependencies=[Depends(auth_all)])
 async def get_queue_entry(id: str):
     """
     Retrieve details of a specific queue entry by its ID.
@@ -88,7 +102,8 @@ async def get_queue_entry(id: str):
 
 @router.put("/{id}", 
             response_model=QueueResponse,
-            summary="Update queue entry status or details")
+            summary="Update queue entry status or details",
+            dependencies=[Depends(auth_all)])
 async def update_queue_entry(id: str, update_data: QueueUpdate):
     """
     Update a queue entry (e.g., mark as served or cancelled, or update liters).
@@ -115,7 +130,8 @@ async def update_queue_entry(id: str, update_data: QueueUpdate):
 
 @router.delete("/{id}", 
                status_code=status.HTTP_204_NO_CONTENT,
-               summary="Remove entry from queue")
+               summary="Remove entry from queue",
+               dependencies=[Depends(auth_admin)])
 async def remove_from_queue(id: str):
     """
     Remove a specific entry from the system.

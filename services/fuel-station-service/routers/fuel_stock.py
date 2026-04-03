@@ -19,6 +19,12 @@ from utils.validation import (
     object_id_or_raise,
     utc_today_date,
 )
+from utils.auth import RoleChecker
+
+# Shared role checkers
+auth_admin = RoleChecker(["admin"])
+auth_staff = RoleChecker(["admin", "station_operator"])
+auth_all = RoleChecker(["admin", "station_operator", "citizen"])
 
 
 router = APIRouter()
@@ -29,6 +35,7 @@ router = APIRouter()
     response_model=FuelStockResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create daily fuel stock for a station and fuel type",
+    dependencies=[Depends(auth_staff)],
 )
 async def create_fuel_stock(payload: FuelStockCreate, db=Depends(get_database)):
     # Validate station exists and supports this fuel type
@@ -71,6 +78,7 @@ async def create_fuel_stock(payload: FuelStockCreate, db=Depends(get_database)):
     "/",
     response_model=List[FuelStockResponse],
     summary="List fuel stock records (optionally filter by stationId and date)",
+    dependencies=[Depends(auth_all)],
 )
 async def list_fuel_stocks(
     stationId: Optional[str] = None,
@@ -95,6 +103,7 @@ async def list_fuel_stocks(
     "/{id}",
     response_model=FuelStockResponse,
     summary="Get a fuel stock record by ID",
+    dependencies=[Depends(auth_all)],
 )
 async def get_fuel_stock(id: str, db=Depends(get_database)):
     if not ObjectId.is_valid(id):
@@ -112,6 +121,7 @@ async def get_fuel_stock(id: str, db=Depends(get_database)):
     "/{id}",
     response_model=FuelStockResponse,
     summary="Update a fuel stock record by ID",
+    dependencies=[Depends(auth_staff)],
 )
 async def update_fuel_stock(id: str, update: FuelStockUpdate, db=Depends(get_database)):
     if not ObjectId.is_valid(id):
@@ -159,6 +169,7 @@ async def update_fuel_stock(id: str, update: FuelStockUpdate, db=Depends(get_dat
     "/{id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a fuel stock record by ID",
+    dependencies=[Depends(auth_admin)],
 )
 async def delete_fuel_stock(id: str, db=Depends(get_database)):
     if not ObjectId.is_valid(id):
@@ -174,6 +185,7 @@ async def delete_fuel_stock(id: str, db=Depends(get_database)):
     "/station/{stationId}",
     response_model=List[FuelStockResponse],
     summary="List fuel stock records for a station",
+    dependencies=[Depends(auth_all)],
 )
 async def list_by_station(stationId: str, db=Depends(get_database)):
     if not ObjectId.is_valid(stationId):
@@ -187,6 +199,7 @@ async def list_by_station(stationId: str, db=Depends(get_database)):
 @router.patch(
     "/deduct",
     summary="Deduct available liters from today's FuelStock (optional transaction tracking)",
+    dependencies=[Depends(auth_all)],
 )
 async def deduct_fuel_stock(payload: FuelStockDeduct, db=Depends(get_database)):
     # Validate station exists and supports this fuel type

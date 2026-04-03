@@ -1,56 +1,59 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, status, Request, Depends
+from fastapi.security import HTTPBearer
 from services.queue_transaction_services import QueueService
-from models.queue import QueueResponse, QueueJoin
+from models.queue import QueueResponse, QueueJoin, QueueUpdate
+from utils.auth import role_required
 from typing import List
 
 router = APIRouter()
 service = QueueService()
-
-@router.get("/", 
-            response_model=List[QueueResponse],
-            summary="List all active queues",
-            tags=["Queues"])
-async def get_queues():
-    """
-    Retrieve information about all current fuel pump queues.
-    """
-    return await service.get_all()
+security = HTTPBearer()
 
 @router.post("/", 
              response_model=QueueResponse,
+             status_code=status.HTTP_201_CREATED,
              summary="Join a fuel queue",
-             tags=["Queues"])
-async def join_queue(data: QueueJoin):
-    """
-    Citizen joins a queue at a specific fuel station.
-    """
-    return await service.join_queue(data.model_dump())
+             tags=["Queues"],
+             dependencies=[Depends(role_required(["admin", "citizen", "station_operator"])), Depends(security)])
+async def join_queue(queue: QueueJoin, request: Request):
+    return await service.join_queue(queue.model_dump(), request)
 
-@router.get("/station/{stationId}", 
+@router.get("/", 
             response_model=List[QueueResponse],
-            summary="Get queue for a station",
-            tags=["Queues"])
-async def get_station_queue(stationId: str):
-    """
-    Retrieve the current queue for a specific station.
-    """
-    return await service.get_by_station(stationId)
+            summary="List all queues",
+            tags=["Queues"],
+            dependencies=[Depends(security)])
+async def get_queues(request: Request):
+    return await service.get_all(request)
 
-@router.put("/{id}", 
+@router.get("/{queue_id}", 
             response_model=QueueResponse,
-            summary="Update queue entry",
-            tags=["Queues"])
-async def update_queue_entry(id: str, data: dict): # Use dict for partial updates via gateway
-    """
-    Update a queue entry (e.g., mark as served or cancelled).
-    """
-    return await service.update(id, data)
+            summary="Get queue by ID",
+            tags=["Queues"],
+            dependencies=[Depends(security)])
+async def get_queue(queue_id: str, request: Request):
+    return await service.get_by_id(queue_id, request)
 
-@router.delete("/{id}", 
+@router.get("/station/{station_id}", 
+            response_model=List[QueueResponse],
+            summary="List queues by station",
+            tags=["Queues"],
+            dependencies=[Depends(security)])
+async def get_by_station(station_id: str, request: Request):
+    return await service.get_by_station(station_id, request)
+
+@router.put("/{queue_id}", 
+            response_model=QueueResponse,
+            summary="Update queue status",
+            tags=["Queues"],
+            dependencies=[Depends(role_required(["admin", "station_operator"])), Depends(security)])
+async def update_queue(queue_id: str, queue_update: QueueUpdate, request: Request):
+    return await service.update(queue_id, queue_update.model_dump(), request)
+
+@router.delete("/{queue_id}", 
+               status_code=status.HTTP_204_NO_CONTENT,
                summary="Remove from queue",
-               tags=["Queues"])
-async def delete_queue_entry(id: str):
-    """
-    Remove a specific entry from the queue.
-    """
-    return await service.delete(id)
+               tags=["Queues"],
+               dependencies=[Depends(role_required(["admin", "citizen", "station_operator"])), Depends(security)])
+async def delete_queue(queue_id: str, request: Request):
+    return await service.delete(queue_id, request)
