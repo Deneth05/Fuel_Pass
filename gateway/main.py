@@ -27,9 +27,8 @@ async def add_auth_middleware(request: Request, call_next):
     return await auth_middleware(request, call_next)
 
 # Register routers with role-based access
-# Admin: full access
-# Citizen: view own profiles, vehicles, join queues
-# Station Operator: read citizens, manage stocks, update queues, record transactions
+# Admin: full access (management, stock, queues, transactions)
+# Citizen: end-user access (register, view own data, join queues)
 
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 app.include_router(citizens.router, prefix="/citizens", tags=["Citizens"])
@@ -50,4 +49,4 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)

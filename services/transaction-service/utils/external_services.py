@@ -4,12 +4,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-CITIZEN_SERVICE_URL = os.getenv("CITIZEN_SERVICE_URL", "http://localhost:8001")
-STATION_SERVICE_URL = os.getenv("STATION_SERVICE_URL", "http://localhost:8002")
-QUEUE_SERVICE_URL = os.getenv("QUEUE_SERVICE_URL", "http://localhost:8003")
+CITIZEN_SERVICE_URL = os.getenv("CITIZEN_SERVICE_URL", "http://127.0.0.1:8001")
+STATION_SERVICE_URL = os.getenv("STATION_SERVICE_URL", "http://127.0.0.1:8002")
+QUEUE_SERVICE_URL = os.getenv("QUEUE_SERVICE_URL", "http://127.0.0.1:8003")
 
 async def validate_vehicle(vehicle_id: str, headers: dict = None):
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(trust_env=False, timeout=20.0) as client:
         try:
             response = await client.get(f"{CITIZEN_SERVICE_URL}/vehicles/{vehicle_id}", headers=headers)
             return response.status_code == 200
@@ -17,7 +17,7 @@ async def validate_vehicle(vehicle_id: str, headers: dict = None):
             return False
 
 async def validate_fuel_stock(station_id: str, fuel_type: str, liters: float, headers: dict = None):
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(trust_env=False, timeout=20.0) as client:
         try:
             response = await client.get(f"{STATION_SERVICE_URL}/fuel-stock/station/{station_id}", headers=headers)
             if response.status_code == 200:
@@ -32,7 +32,7 @@ async def validate_fuel_stock(station_id: str, fuel_type: str, liters: float, he
             return False
 
 async def update_fuel_stock(station_id: str, fuel_type: str, liters: float, headers: dict = None):
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(trust_env=False, timeout=20.0) as client:
         try:
             payload = {"stationId": station_id, "fuelType": fuel_type, "liters": liters}
             response = await client.patch(f"{STATION_SERVICE_URL}/fuel-stock/deduct", json=payload, headers=headers)
@@ -41,18 +41,20 @@ async def update_fuel_stock(station_id: str, fuel_type: str, liters: float, head
             return False
 
 async def update_vehicle_quota(vehicle_id: str, liters: float, headers: dict = None):
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(trust_env=False, timeout=20.0) as client:
         try:
-            # Note: The actual endpoint in citizen service might be different. 
-            # I'll use a generic one for now, but in a real system we'd match the router.
-            payload = {"consumedLiters": liters} 
-            response = await client.put(f"{CITIZEN_SERVICE_URL}/quotas/{vehicle_id}", json=payload, headers=headers)
-            return response.status_code in [200, 204]
-        except Exception:
+            payload = {"amount": liters} 
+            url = f"{CITIZEN_SERVICE_URL}/quotas/vehicle/{vehicle_id}/deduct"
+            print(f"DEBUG: Calling {url} with {payload}")
+            response = await client.post(url, json=payload, headers=headers)
+            print(f"DEBUG: Response from citizen-service: {response.status_code} - {response.text}")
+            return response.status_code == 200
+        except Exception as e:
+            print(f"DEBUG: update_vehicle_quota exception: {e}")
             return False
 
 async def update_queue_status(vehicle_id: str, station_id: str, headers: dict = None):
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(trust_env=False, timeout=20.0) as client:
         try:
             # Assuming endpoint: PUT /queues/{id} or similar
             # For simplicity, we just find the entry and update it.

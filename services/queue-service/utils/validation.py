@@ -2,14 +2,14 @@ import os
 import httpx
 from fastapi import HTTPException, status
 
-CITIZEN_VEHICLE_SERVICE_URL = os.getenv("CITIZEN_VEHICLE_SERVICE_URL", "http://localhost:8000")
+CITIZEN_VEHICLE_SERVICE_URL = os.getenv("CITIZEN_VEHICLE_SERVICE_URL", "http://127.0.0.1:8001")
 
 async def validate_vehicle_and_quota(vehicle_id: str, requested_liters: float, headers: dict = None):
     """
     Validates if the vehicle exists and has enough fuel quota.
     Calls the Citizen & Vehicle Service.
     """
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(trust_env=False) as client:
         # 1. Check if vehicle exists
         try:
             vehicle_response = await client.get(f"{CITIZEN_VEHICLE_SERVICE_URL}/vehicles/{vehicle_id}", headers=headers)

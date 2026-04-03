@@ -14,15 +14,15 @@ security = HTTPBearer()
              status_code=status.HTTP_201_CREATED,
              summary="Join a fuel queue",
              tags=["Queues"],
-             dependencies=[Depends(role_required(["admin", "citizen", "station_operator"])), Depends(security)])
+             dependencies=[Depends(role_required(["admin", "citizen"])), Depends(security)])
 async def join_queue(queue: QueueJoin, request: Request):
-    return await service.join_queue(queue.model_dump(), request)
+    return await service.join_queue(queue.model_dump(mode="json"), request)
 
 @router.get("/", 
             response_model=List[QueueResponse],
             summary="List all queues",
             tags=["Queues"],
-            dependencies=[Depends(security)])
+            dependencies=[Depends(role_required(["admin", "citizen"])), Depends(security)])
 async def get_queues(request: Request):
     return await service.get_all(request)
 
@@ -30,7 +30,7 @@ async def get_queues(request: Request):
             response_model=QueueResponse,
             summary="Get queue by ID",
             tags=["Queues"],
-            dependencies=[Depends(security)])
+            dependencies=[Depends(role_required(["admin", "citizen"])), Depends(security)])
 async def get_queue(queue_id: str, request: Request):
     return await service.get_by_id(queue_id, request)
 
@@ -38,7 +38,7 @@ async def get_queue(queue_id: str, request: Request):
             response_model=List[QueueResponse],
             summary="List queues by station",
             tags=["Queues"],
-            dependencies=[Depends(security)])
+            dependencies=[Depends(role_required(["admin", "citizen"])), Depends(security)])
 async def get_by_station(station_id: str, request: Request):
     return await service.get_by_station(station_id, request)
 
@@ -46,14 +46,14 @@ async def get_by_station(station_id: str, request: Request):
             response_model=QueueResponse,
             summary="Update queue status",
             tags=["Queues"],
-            dependencies=[Depends(role_required(["admin", "station_operator"])), Depends(security)])
+            dependencies=[Depends(role_required(["admin"])), Depends(security)])
 async def update_queue(queue_id: str, queue_update: QueueUpdate, request: Request):
-    return await service.update(queue_id, queue_update.model_dump(), request)
+    return await service.update(queue_id, queue_update.model_dump(mode="json"), request)
 
 @router.delete("/{queue_id}", 
                status_code=status.HTTP_204_NO_CONTENT,
                summary="Remove from queue",
                tags=["Queues"],
-               dependencies=[Depends(role_required(["admin", "citizen", "station_operator"])), Depends(security)])
+               dependencies=[Depends(role_required(["admin", "citizen"])), Depends(security)])
 async def delete_queue(queue_id: str, request: Request):
     return await service.delete(queue_id, request)

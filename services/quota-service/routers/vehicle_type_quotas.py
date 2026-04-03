@@ -1,15 +1,14 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
-from bson import ObjectId
 from database.mongo import get_database
 from models.vehicle_type_quota import VehicleTypeQuotaCreate, VehicleTypeQuotaUpdate, VehicleTypeQuotaResponse
-from models.vehicle import VehicleType
+from models.vehicle_types import VehicleType
 from utils.auth import RoleChecker
 
 # Shared role checkers
-auth_admin = RoleChecker(["admin", "manager"])
-auth_staff = RoleChecker(["admin", "manager", "station_operator"])
-auth_all = RoleChecker(["admin", "manager", "station_operator", "citizen"])
+auth_admin = RoleChecker(["admin"])
+auth_staff = RoleChecker(["admin"])
+auth_all = RoleChecker(["admin", "citizen"])
 
 router = APIRouter()
 db = get_database()
@@ -22,10 +21,6 @@ collection = db["vehicle_type_quotas"]
              tags=["Vehicle Type Quotas"],
              dependencies=[Depends(auth_admin)])
 async def create_vehicle_type_quota(quota: VehicleTypeQuotaCreate):
-    """
-    Define the fuel liters per week for a specific vehicle type.
-    If it already exists, it updates it.
-    """
     existing = await collection.find_one({"vehicleType": quota.vehicleType})
     if existing:
         await collection.update_one(
@@ -71,9 +66,6 @@ async def get_vehicle_type_quota(vehicle_type: VehicleType):
             tags=["Vehicle Type Quotas"],
             dependencies=[Depends(auth_admin)])
 async def update_vehicle_type_quota(vehicle_type: VehicleType, quota_update: VehicleTypeQuotaUpdate):
-    """
-    Update the fuel liters per week for a specific vehicle type.
-    """
     existing = await collection.find_one({"vehicleType": vehicle_type})
     if not existing:
         raise HTTPException(status_code=404, detail=f"Quota for {vehicle_type} not found")
@@ -97,9 +89,6 @@ async def update_vehicle_type_quota(vehicle_type: VehicleType, quota_update: Veh
                tags=["Vehicle Type Quotas"],
                dependencies=[Depends(auth_admin)])
 async def delete_vehicle_type_quota(vehicle_type: VehicleType):
-    """
-    Remove the quota definition for a specific vehicle type.
-    """
     result = await collection.delete_one({"vehicleType": vehicle_type})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail=f"Quota for {vehicle_type} not found")

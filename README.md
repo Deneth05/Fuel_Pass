@@ -7,7 +7,8 @@ A microservices-based system for managing fuel distribution and quotas.
 ```text
 Fuel Pass/
 ├── services/
-│   ├── citizen-vehicle-service/  - Manages citizens, their vehicles, and fuel quotas.
+│   ├── citizen-vehicle-service/  - Manages citizens and their vehicles.
+│   ├── quota-service/            - Manages fuel quotas and vehicle type quotas.
 │   ├── fuel-station-service/     - Manages fuel stations and stock levels.
 │   ├── transaction-service/      - Tracks fuel usage and transactions.
 │   └── queue-service/            - Manages fuel pump queues.
@@ -35,6 +36,7 @@ Fuel Pass/
 3.  **Install all dependencies**:
     ```powershell
     pip install -r services/citizen-vehicle-service/requirements.txt
+    pip install -r services/quota-service/requirements.txt
     pip install -r services/fuel-station-service/requirements.txt
     pip install -r services/queue-service/requirements.txt
     pip install -r services/transaction-service/requirements.txt
@@ -50,7 +52,8 @@ After activating the virtual environment in your terminal, navigate to the servi
 | **Citizen & Vehicle** | `services/citizen-vehicle-service/` | `python main.py` | `8001` |
 | **Fuel Station** | `services/fuel-station-service/` | `python main.py` | `8002` |
 | **Queue Service** | `services/queue-service/` | `python main.py` | `8003` |
-| **Transaction Service**| `services/transaction-service/` | `python main.py` | `8004` |
+| **Transaction Service**| `services/transaction-service/` | `python main.py` | `8005` |
+| **Quota Service** | `services/quota-service/` | `python main.py` | `8006` |
 
 > [!TIP]
 > Each service has its own Swagger documentation at `http://localhost:<PORT>/api-docs`. The unified documentation is available at `http://localhost:8000/api-docs`.

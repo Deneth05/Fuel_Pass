@@ -9,9 +9,8 @@ from utils.auth import RoleChecker, get_password_hash
 # Shared role checkers
 auth_admin = RoleChecker(["admin"])
 auth_citizen = RoleChecker(["citizen"])
-auth_operator = RoleChecker(["station_operator"])
-auth_staff = RoleChecker(["admin", "station_operator"])
-auth_all = RoleChecker(["admin", "station_operator", "citizen"])
+auth_staff = RoleChecker(["admin"])
+auth_all = RoleChecker(["admin", "citizen"])
 
 router = APIRouter()
 db = get_database()

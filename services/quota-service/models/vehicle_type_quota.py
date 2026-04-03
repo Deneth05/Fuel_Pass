@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, ConfigDict
-from models.vehicle import VehicleType
+from models.vehicle_types import VehicleType
 from typing import Optional
 from utils.mongo_helper import PyObjectId
 

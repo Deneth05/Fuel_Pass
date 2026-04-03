@@ -3,7 +3,7 @@ from fastapi import Request
 from typing import Optional
 
 class StationService:
-    BASE_URL = "http://localhost:8002/stations"
+    BASE_URL = "http://127.0.0.1:8002/stations"
     
     async def create(self, station_data, request: Optional[Request] = None):
         return await forward_request("POST", f"{self.BASE_URL}/", json=station_data, request=request)
@@ -21,7 +21,7 @@ class StationService:
         return await forward_request("DELETE", f"{self.BASE_URL}/{station_id}", request=request)
 
 class FuelStockService:
-    BASE_URL = "http://localhost:8002/fuel-stock"
+    BASE_URL = "http://127.0.0.1:8002/fuel-stock"
     
     async def create(self, stock_data, request: Optional[Request] = None):
         return await forward_request("POST", f"{self.BASE_URL}/", json=stock_data, request=request)

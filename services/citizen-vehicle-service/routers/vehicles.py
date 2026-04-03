@@ -8,9 +8,8 @@ from utils.auth import RoleChecker
 # Shared role checkers
 auth_admin = RoleChecker(["admin"])
 auth_citizen = RoleChecker(["citizen"])
-auth_operator = RoleChecker(["station_operator"])
-auth_staff = RoleChecker(["admin", "station_operator"])
-auth_all = RoleChecker(["admin", "station_operator", "citizen"])
+auth_staff = RoleChecker(["admin"])
+auth_all = RoleChecker(["admin", "citizen"])
 
 router = APIRouter()
 db = get_database()
@@ -48,8 +47,8 @@ async def create_vehicle(vehicle: VehicleCreate):
 
     # Auto-assign quota
     from utils.quota_manager import get_week_start_date
-    from routers.vehicle_type_quotas import collection as type_quota_collection
-    from routers.quotas import collection as quota_collection
+    type_quota_collection = db["vehicle_type_quotas"]
+    quota_collection = db["quotas"]
     
     type_quota = await type_quota_collection.find_one({"vehicleType": vehicle.vehicleType})
     allocated_liters = 0.0

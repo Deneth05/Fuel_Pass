@@ -21,7 +21,7 @@ async def get_vehicles(request: Request):
             response_model=VehicleResponse,
             summary="Get vehicle by ID",
             tags=["Vehicles"],
-            dependencies=[Depends(role_required(["admin", "citizen", "station_operator"])), Depends(security)])
+            dependencies=[Depends(role_required(["admin", "citizen"])), Depends(security)])
 async def get_vehicle(vehicle_id: str, request: Request):
     return await service.get_by_id(vehicle_id, request)
 
@@ -31,7 +31,7 @@ async def get_vehicle(vehicle_id: str, request: Request):
              tags=["Vehicles"],
              dependencies=[Depends(role_required(["admin", "citizen"])), Depends(security)])
 async def create_vehicle(vehicle: VehicleCreate, request: Request):
-    return await service.create(vehicle.model_dump(), request)
+    return await service.create(vehicle.model_dump(mode="json"), request)
 
 @router.put("/{vehicle_id}",
             response_model=VehicleResponse,
@@ -39,7 +39,7 @@ async def create_vehicle(vehicle: VehicleCreate, request: Request):
             tags=["Vehicles"],
             dependencies=[Depends(role_required(["admin", "citizen"])), Depends(security)])
 async def update_vehicle(vehicle_id: str, vehicle: VehicleUpdate, request: Request):
-    return await service.update(vehicle_id, vehicle.model_dump(), request)
+    return await service.update(vehicle_id, vehicle.model_dump(mode="json"), request)
 
 @router.delete("/{vehicle_id}",
                summary="Delete a vehicle",

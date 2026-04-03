@@ -13,7 +13,7 @@ security = HTTPBearer()
             response_model=List[TransactionResponse],
             summary="List all transactions",
             tags=["Transactions"],
-            dependencies=[Depends(security), Depends(role_required(["admin", "station_operator"]))])
+            dependencies=[Depends(security), Depends(role_required(["admin"]))])
 async def get_transactions(request: Request):
     return await service.get_all(request)
 
@@ -21,7 +21,7 @@ async def get_transactions(request: Request):
             response_model=TransactionResponse,
             summary="Get a transaction by ID",
             tags=["Transactions"],
-            dependencies=[Depends(security)])
+            dependencies=[Depends(security), Depends(role_required(["admin", "citizen"]))])
 async def get_transaction(id: str, request: Request):
     return await service.get_by_id(id, request)
 
@@ -29,7 +29,7 @@ async def get_transaction(id: str, request: Request):
             response_model=List[TransactionResponse],
             summary="List transactions by station",
             tags=["Transactions"],
-            dependencies=[Depends(security), Depends(role_required(["admin", "station_operator"]))])
+            dependencies=[Depends(security), Depends(role_required(["admin"]))])
 async def list_by_station(stationId: str, request: Request):
     return await service.get_by_station(stationId, request)
 
@@ -37,7 +37,7 @@ async def list_by_station(stationId: str, request: Request):
             response_model=List[TransactionResponse],
             summary="List transactions by vehicle",
             tags=["Transactions"],
-            dependencies=[Depends(security)])
+            dependencies=[Depends(security), Depends(role_required(["admin", "citizen"]))])
 async def list_by_vehicle(vehicleId: str, request: Request):
     return await service.get_by_vehicle(vehicleId, request)
 
@@ -45,9 +45,9 @@ async def list_by_vehicle(vehicleId: str, request: Request):
              response_model=TransactionResponse,
              summary="Create a new transaction",
              tags=["Transactions"],
-             dependencies=[Depends(security), Depends(role_required(["admin", "station_operator"]))])
+             dependencies=[Depends(security), Depends(role_required(["admin"]))])
 async def create_transaction(transaction: TransactionBase, request: Request):
-    return await service.create(transaction.model_dump(), request)
+    return await service.create(transaction.model_dump(mode="json"), request)
 
 @router.put("/{id}", 
             response_model=TransactionResponse,
@@ -55,7 +55,7 @@ async def create_transaction(transaction: TransactionBase, request: Request):
             tags=["Transactions"],
             dependencies=[Depends(security), Depends(role_required(["admin"]))])
 async def update_transaction(id: str, transaction: TransactionBase, request: Request):
-    return await service.update(id, transaction.model_dump(), request)
+    return await service.update(id, transaction.model_dump(mode="json"), request)
 
 @router.delete("/{id}", 
                summary="Delete a transaction",

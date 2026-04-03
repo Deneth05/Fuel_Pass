@@ -21,7 +21,7 @@ async def get_quotas(request: Request):
             response_model=QuotaResponse,
             summary="Get quota by ID",
             tags=["Quotas"],
-            dependencies=[Depends(role_required(["admin", "citizen", "station_operator"])), Depends(security)])
+            dependencies=[Depends(role_required(["admin", "citizen"])), Depends(security)])
 async def get_quota(id: str, request: Request):
     return await service.get_by_id(id, request)
 
@@ -39,7 +39,7 @@ async def get_by_citizen(citizen_id: str, request: Request):
              tags=["Quotas"],
              dependencies=[Depends(role_required(["admin"])), Depends(security)])
 async def create_quota(quota: QuotaCreate, request: Request):
-    return await service.create(quota.model_dump(), request)
+    return await service.create(quota.model_dump(mode="json"), request)
 
 @router.put("/renew-all", 
             summary="Renew all quotas for the new month",
@@ -54,7 +54,7 @@ async def renew_all(request: Request):
             tags=["Quotas"],
             dependencies=[Depends(role_required(["admin"])), Depends(security)])
 async def update_quota(id: str, quota: QuotaUpdate, request: Request):
-    return await service.update(id, quota.model_dump(), request)
+    return await service.update(id, quota.model_dump(mode="json"), request)
 
 @router.delete("/{id}", 
                summary="Delete a quota",

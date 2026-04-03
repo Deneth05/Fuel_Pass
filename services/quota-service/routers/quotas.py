@@ -8,14 +8,13 @@ from utils.auth import RoleChecker
 # Shared role checkers
 auth_admin = RoleChecker(["admin"])
 auth_citizen = RoleChecker(["citizen"])
-auth_operator = RoleChecker(["station_operator"])
-auth_staff = RoleChecker(["admin", "station_operator"])
-auth_all = RoleChecker(["admin", "station_operator", "citizen"])
+auth_staff = RoleChecker(["admin"])
+auth_all = RoleChecker(["admin", "citizen"])
 
 router = APIRouter()
 db = get_database()
 collection = db["quotas"]
-vehicle_collection = db["vehicles"]
+vehicle_collection = db["vehicles"] # Accessing vehicles for validation
 
 @router.post("/", 
              response_model=QuotaResponse, 
@@ -24,10 +23,6 @@ vehicle_collection = db["vehicles"]
              tags=["Quotas"],
              dependencies=[Depends(auth_admin)])
 async def create_quota(quota: QuotaCreate):
-    """
-    Allocate a new fuel quota for a vehicle.
-    Validates the vehicle's existence before creation.
-    """
     # Validate vehicle existence
     if not ObjectId.is_valid(quota.vehicleId):
         raise HTTPException(status_code=400, detail="Invalid vehicleId format")
@@ -49,9 +44,6 @@ async def create_quota(quota: QuotaCreate):
             tags=["Quotas"],
             dependencies=[Depends(auth_admin)])
 async def list_quotas():
-    """
-    Retrieve all fuel quota records.
-    """
     quotas = await collection.find().to_list(100)
     for q in quotas:
         q["_id"] = str(q["_id"])
@@ -63,9 +55,6 @@ async def list_quotas():
             tags=["Quotas"],
             dependencies=[Depends(auth_all)])
 async def get_quota(id: str):
-    """
-    Retrieve a specific quota record by its ID.
-    """
     if not ObjectId.is_valid(id):
         raise HTTPException(status_code=400, detail="Invalid ID format")
     
@@ -82,10 +71,6 @@ async def get_quota(id: str):
             tags=["Quotas"],
             dependencies=[Depends(auth_all)])
 async def get_citizen_quota(citizen_id: str):
-    """
-    Retrieve quota details for a specific citizen's vehicle.
-    This implementation assume 1-to-1 for simplicity or returns the latest vehicle's quota.
-    """
     # Find vehicles for this citizen
     vehicles = await vehicle_collection.find({"citizenId": citizen_id}).to_list(1)
     if not vehicles:
@@ -105,10 +90,6 @@ async def get_citizen_quota(citizen_id: str):
             tags=["Quotas"],
             dependencies=[Depends(auth_admin)])
 async def renew_all_quotas():
-    """
-    Renew fuel quotas for all registered vehicles.
-    Sets consumedLiters to 0 and updates weekStartDate to the current Sunday.
-    """
     from utils.quota_manager import get_week_start_date
     from routers.vehicle_type_quotas import collection as type_quota_collection
     
@@ -135,7 +116,6 @@ async def renew_all_quotas():
         })
         
         if existing_quota:
-            # Refresh existing
             await collection.update_one(
                 {"_id": existing_quota["_id"]},
                 {"$set": {
@@ -144,7 +124,6 @@ async def renew_all_quotas():
                 }}
             )
         else:
-            # Create new for the new week
             new_quota = {
                 "vehicleId": vehicle_id,
                 "weekStartDate": current_week_start,
@@ -157,15 +136,50 @@ async def renew_all_quotas():
         
     return {"message": f"Successfully renewed quotas for {renewed_count} vehicles", "weekStartDate": current_week_start}
 
+@router.post("/vehicle/{vehicle_id}/deduct", 
+             status_code=status.HTTP_200_OK,
+             summary="Deduct from vehicle quota",
+             tags=["Quotas"],
+             dependencies=[Depends(auth_all)])
+async def deduct_quota(vehicle_id: str, payload: dict):
+    from utils.quota_manager import get_week_start_date
+    
+    amount = payload.get("amount")
+    if amount is None or amount < 0:
+        raise HTTPException(status_code=400, detail="Invalid deduction amount")
+
+    current_week_start = get_week_start_date()
+    
+    quota = await collection.find_one({
+        "vehicleId": vehicle_id,
+        "weekStartDate": current_week_start
+    })
+    
+    if not quota:
+        raise HTTPException(status_code=404, detail=f"No quota record found for vehicle {vehicle_id} for the current week")
+
+    remaining = quota["allocatedLiters"] - quota["consumedLiters"]
+    if remaining < amount and amount > 0:
+         raise HTTPException(status_code=400, detail=f"Insufficient quota. Available: {remaining}")
+
+    result = await collection.update_one(
+        {"_id": quota["_id"]},
+        {"$inc": {"consumedLiters": amount}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=500, detail="Failed to update quota record")
+
+    updated_quota = await collection.find_one({"_id": quota["_id"]})
+    updated_quota["_id"] = str(updated_quota["_id"])
+    return updated_quota
+
 @router.put("/{id}", 
             response_model=QuotaResponse,
             summary="Update quota details",
             tags=["Quotas"],
             dependencies=[Depends(auth_admin)])
 async def update_quota(id: str, quota_update: QuotaUpdate):
-    """
-    Update an existing fuel quota record.
-    """
     if not ObjectId.is_valid(id):
         raise HTTPException(status_code=400, detail="Invalid ID format")
     
@@ -195,9 +209,6 @@ async def update_quota(id: str, quota_update: QuotaUpdate):
                tags=["Quotas"],
                dependencies=[Depends(auth_admin)])
 async def delete_quota(id: str):
-    """
-    Remove a fuel quota record from the system.
-    """
     if not ObjectId.is_valid(id):
         raise HTTPException(status_code=400, detail="Invalid ID format")
     

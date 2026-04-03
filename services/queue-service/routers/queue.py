@@ -9,8 +9,8 @@ from utils.auth import RoleChecker
 
 # Shared role checkers
 auth_admin = RoleChecker(["admin"])
-auth_staff = RoleChecker(["admin", "station_operator"])
-auth_all = RoleChecker(["admin", "station_operator", "citizen"])
+auth_staff = RoleChecker(["admin"])
+auth_all = RoleChecker(["admin", "citizen"])
 
 router = APIRouter()
 collection = get_collection("queues")
