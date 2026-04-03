@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date as dt_date
 from typing import List, Optional
 
 from bson import ObjectId
@@ -9,7 +9,7 @@ from pydantic import field_validator
 class FuelStockCreate(BaseModel):
     stationId: str = Field(..., example="650c1f2e1c4e4a0012345678")
     fuelType: str = Field(..., min_length=1, example="Petrol 92")
-    date: date = Field(..., example="2026-04-03", description="Daily stock date (YYYY-MM-DD)")
+    date: dt_date = Field(..., example="2026-04-03", description="Daily stock date (YYYY-MM-DD)")
 
     dailyQuota: float = Field(..., gt=0, example=5000.0, description="Total available quota for the day (liters)")
     receivedLiters: float = Field(..., ge=0, example=1500.0, description="Liters received into stock for the day")
@@ -35,7 +35,7 @@ class FuelStockCreate(BaseModel):
 class FuelStockUpdate(BaseModel):
     stationId: Optional[str] = Field(None, example="650c1f2e1c4e4a0012345678")
     fuelType: Optional[str] = Field(None, min_length=1, example="Petrol 92")
-    date: Optional[date] = Field(None, example="2026-04-03")
+    date: Optional[dt_date] = Field(None, example="2026-04-03")
 
     dailyQuota: Optional[float] = Field(None, gt=0, example=5000.0)
     receivedLiters: Optional[float] = Field(None, ge=0, example=2000.0)
@@ -59,7 +59,7 @@ class FuelStockResponse(BaseModel):
     id: str = Field(alias="_id")
     stationId: str
     fuelType: str
-    date: date
+    date: dt_date
 
     dailyQuota: float
     availableLiters: float
@@ -73,7 +73,7 @@ class FuelStockDeduct(BaseModel):
     stationId: str = Field(..., example="650c1f2e1c4e4a0012345678")
     fuelType: str = Field(..., min_length=1, example="Petrol 92")
     liters: float = Field(..., gt=0, example=10.5, description="Liters to deduct from availableLiters")
-    date: Optional[date] = Field(None, example="2026-04-03", description="Optional stock date (defaults to today)")
+    date: Optional[dt_date] = Field(None, example="2026-04-03", description="Optional stock date (defaults to today)")
     transactionId: Optional[str] = Field(None, example="650c1f2e1c4e4a0099999999")
 
     @field_validator("fuelType")
