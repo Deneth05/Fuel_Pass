@@ -8,7 +8,7 @@ A microservices-based system for managing fuel distribution and quotas.
 Fuel Pass/
 ├── services/
 │   ├── citizen-vehicle-service/  - Manages citizens, their vehicles, and fuel quotas.
-│   ├── station-service/          - (Planned) Manages fuel stations and stock levels.
+│   ├── fuel-station-service/     - Manages fuel stations and stock levels.
 │   ├── transaction-service/      - Tracks fuel usage and transactions.
 │   └── queue-service/            - Manages fuel pump queues.
 ├── gateway/                     - API Gateway for routing and authentication.
@@ -17,66 +17,52 @@ Fuel Pass/
 
 ## Getting Started
 
-### Citizen & Vehicle Service
-1. Navigate to the service directory:
-   ```bash
-   cd services/citizen-vehicle-service
-   ```
-2. Install dependencies (using the root virtual environment):
-   ```bash
-   ../../venv/Scripts/pip install -r requirements.txt
-   ```
-3. Run the service:
-   ```bash
-   ../../venv/Scripts/python main.py
-   ```
+### 1. Prerequisites
+- **Python 3.12+**: Ensure Python is installed and added to your PATH.
+- **MongoDB**: A running MongoDB instance (local or Atlas).
 
-### Queue Service
-1. Navigate to the service directory:
-   ```bash
-   cd services/queue-service
-   ```
-2. Install dependencies (using the root virtual environment):
-   ```bash
-   ../../venv/Scripts/pip install -r requirements.txt
-   ```
-3. Run the service:
-   ```bash
-   ../../venv/Scripts/python main.py
-   ```
-4. Service details:
-   - Port: `8003`
-   - Dependency: Requires `Citizen & Vehicle Service` (Port 8001) or `API Gateway` (Port 8000) for vehicle validation.
+### 2. Setup Virtual Environment
+> [!IMPORTANT]
+> All setup and activation commands **MUST** be run from the **project root directory** (`Fuel Pass/`).
 
-### Transaction Service
-1. Navigate to the service directory:
-   ```bash
-   cd services/transaction-service
-   ```
-2. Install dependencies (using the root virtual environment):
-   ```bash
-   ../../venv/Scripts/pip install -r requirements.txt
-   ```
-3. Run the service:
-   ```bash
-   ../../venv/Scripts/python main.py
-   ```
-4. Service details:
-   - Port: `8004`
-   - Dependency: Requires `Citizen & Vehicle Service` (Port 8001) or `API Gateway` (Port 8000) for vehicle validation.
+1.  **Create the virtual environment**:
+    ```powershell
+    python -m venv venv
+    ```
+2.  **Activate the virtual environment**:
+    - **Windows (PowerShell)**: `.\venv\Scripts\Activate.ps1`
+    - **Windows (CMD)**: `.\venv\Scripts\activate.bat`
+3.  **Install all dependencies**:
+    ```powershell
+    pip install -r services/citizen-vehicle-service/requirements.txt
+    pip install -r services/fuel-station-service/requirements.txt
+    pip install -r services/queue-service/requirements.txt
+    pip install -r services/transaction-service/requirements.txt
+    pip install -r gateway/requirements.txt
+    ```
 
-### API Gateway
-1. Navigate to the gateway directory:
-   ```bash
-   cd gateway
-   ```
-2. Install dependencies:
-   ```bash
-   ../venv/Scripts/pip install -r requirements.txt
-   ```
-3. Run the gateway:
-   ```bash
-   ../venv/Scripts/python main.py
-   ```
-4. Access the unified API documentation:
-   - URL: `http://localhost:8000/api-docs`
+### 3. Run Services
+After activating the virtual environment in your terminal, navigate to the service folder and run it:
+
+| Service | Directory | Command | Port |
+| :--- | :--- | :--- | :--- |
+| **API Gateway** | `gateway/` | `python main.py` | `8000` |
+| **Citizen & Vehicle** | `services/citizen-vehicle-service/` | `python main.py` | `8001` |
+| **Fuel Station** | `services/fuel-station-service/` | `python main.py` | `8002` |
+| **Queue Service** | `services/queue-service/` | `python main.py` | `8003` |
+| **Transaction Service**| `services/transaction-service/` | `python main.py` | `8004` |
+
+> [!TIP]
+> Each service has its own Swagger documentation at `http://localhost:<PORT>/api-docs`. The unified documentation is available at `http://localhost:8000/api-docs`.
+
+## Troubleshooting
+
+### "Fatal error in launcher" or "No Python at..."
+If you see errors like `Fatal error in launcher` or `No Python at 'C:\Python312\python.exe'`, your virtual environment is broken (likely due to path changes).
+
+**Fix**: Delete the `venv` folder and recreate it:
+1. Delete: `Remove-Item -Recurse -Force venv` (PowerShell) or `rd /s /q venv` (CMD)
+2. Re-run the **Setup Virtual Environment** steps above.
+
+### "Term is not recognized"
+If you get an error saying `.\venv\Scripts\activate` is not recognized, ensure you are in the **project root** directory (where the `venv` folder is located), not inside a `services/` sub-folder.
