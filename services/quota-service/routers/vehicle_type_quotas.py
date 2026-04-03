@@ -1,5 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
+from bson import ObjectId
+import logging
 from database.mongo import get_database
 from models.vehicle_type_quota import VehicleTypeQuotaCreate, VehicleTypeQuotaUpdate, VehicleTypeQuotaResponse
 from models.vehicle_types import VehicleType
@@ -14,6 +16,9 @@ router = APIRouter()
 db = get_database()
 collection = db["vehicle_type_quotas"]
 
+logger = logging.getLogger("quota-service")
+logging.basicConfig(level=logging.INFO)
+
 @router.post("/", 
              response_model=VehicleTypeQuotaResponse, 
              status_code=status.HTTP_201_CREATED,
@@ -21,7 +26,8 @@ collection = db["vehicle_type_quotas"]
              tags=["Vehicle Type Quotas"],
              dependencies=[Depends(auth_admin)])
 async def create_vehicle_type_quota(quota: VehicleTypeQuotaCreate):
-    existing = await collection.find_one({"vehicleType": quota.vehicleType})
+    logger.info(f"Received request to create/update quota for: {quota.vehicleType}")
+    existing = await collection.find_one({"vehicleType": quota.vehicleType.value if hasattr(quota.vehicleType, 'value') else quota.vehicleType})
     if existing:
         await collection.update_one(
             {"_id": existing["_id"]},
@@ -53,8 +59,14 @@ async def list_vehicle_type_quotas():
             summary="Get quota for a specific vehicle type",
             tags=["Vehicle Type Quotas"],
             dependencies=[Depends(auth_all)])
-async def get_vehicle_type_quota(vehicle_type: VehicleType):
-    quota = await collection.find_one({"vehicleType": vehicle_type})
+async def get_vehicle_type_quota(vehicle_type: str):
+    # Try searching by ID if it's a valid ObjectId
+    if ObjectId.is_valid(vehicle_type):
+        quota = await collection.find_one({"_id": ObjectId(vehicle_type)})
+    else:
+        # Otherwise search by vehicleType name
+        quota = await collection.find_one({"vehicleType": vehicle_type})
+        
     if not quota:
         raise HTTPException(status_code=404, detail=f"Quota for {vehicle_type} not found")
     quota["_id"] = str(quota["_id"])
@@ -65,8 +77,14 @@ async def get_vehicle_type_quota(vehicle_type: VehicleType):
             summary="Update an existing vehicle type quota",
             tags=["Vehicle Type Quotas"],
             dependencies=[Depends(auth_admin)])
-async def update_vehicle_type_quota(vehicle_type: VehicleType, quota_update: VehicleTypeQuotaUpdate):
-    existing = await collection.find_one({"vehicleType": vehicle_type})
+async def update_vehicle_type_quota(vehicle_type: str, quota_update: VehicleTypeQuotaUpdate):
+    # Try finding by ID if it's a valid ObjectId
+    if ObjectId.is_valid(vehicle_type):
+        existing = await collection.find_one({"_id": ObjectId(vehicle_type)})
+    else:
+        # Otherwise search by vehicleType name
+        existing = await collection.find_one({"vehicleType": vehicle_type})
+
     if not existing:
         raise HTTPException(status_code=404, detail=f"Quota for {vehicle_type} not found")
     
@@ -88,8 +106,14 @@ async def update_vehicle_type_quota(vehicle_type: VehicleType, quota_update: Veh
                summary="Delete a vehicle type quota",
                tags=["Vehicle Type Quotas"],
                dependencies=[Depends(auth_admin)])
-async def delete_vehicle_type_quota(vehicle_type: VehicleType):
-    result = await collection.delete_one({"vehicleType": vehicle_type})
+async def delete_vehicle_type_quota(vehicle_type: str):
+    # Try deleting by ID if it's a valid ObjectId
+    if ObjectId.is_valid(vehicle_type):
+        result = await collection.delete_one({"_id": ObjectId(vehicle_type)})
+    else:
+        # Otherwise delete by vehicleType name
+        result = await collection.delete_one({"vehicleType": vehicle_type})
+
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail=f"Quota for {vehicle_type} not found")
     return None
