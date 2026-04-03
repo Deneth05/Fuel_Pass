@@ -7,14 +7,21 @@ services = [
     {"name": "Station Service", "dir": "services/fuel-station-service", "port": 8002},
     {"name": "Queue Service", "dir": "services/queue-service", "port": 8003},
     {"name": "Transaction Service", "dir": "services/transaction-service", "port": 8005},
+    {"name": "Quota Service", "dir": "services/quota-service", "port": 8006},
     {"name": "API Gateway", "dir": "gateway", "port": 8000}
 ]
 
 base_path = "d:/MTIT assignment 2/Fuel Pass"
 
 def kill_processes():
-    print("Killing existing uvicorn and python processes...")
-    subprocess.run("taskkill /F /IM python.exe /T", shell=True, capture_output=True)
+    print("Killing existing python processes...")
+    try:
+        # Kill all python processes except the current one
+        # On Windows, we can use wmic or tasklist, but let's just use taskkill and ignore errors
+        # To avoid killing itself, we can use a more specific title or just run it via cmd
+        subprocess.run("taskkill /F /IM python.exe /FI \"PID ne %d\" /T" % os.getpid(), shell=True, capture_output=True)
+    except:
+        pass
     time.sleep(2)
 
 def start_services():
