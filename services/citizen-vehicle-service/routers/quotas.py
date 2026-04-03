@@ -5,8 +5,12 @@ from database.mongo import get_database
 from models.quota import QuotaCreate, QuotaUpdate, QuotaResponse
 from utils.auth import RoleChecker
 
-# Dependency for system admin only
-admin_only = RoleChecker(["system admin"])
+# Shared role checkers
+auth_admin = RoleChecker(["admin"])
+auth_citizen = RoleChecker(["citizen"])
+auth_operator = RoleChecker(["station_operator"])
+auth_staff = RoleChecker(["admin", "station_operator"])
+auth_all = RoleChecker(["admin", "station_operator", "citizen"])
 
 router = APIRouter()
 db = get_database()
@@ -18,7 +22,7 @@ vehicle_collection = db["vehicles"]
              status_code=status.HTTP_201_CREATED,
              summary="Create a fuel quota",
              tags=["Quotas"],
-             dependencies=[Depends(admin_only)])
+             dependencies=[Depends(auth_admin)])
 async def create_quota(quota: QuotaCreate):
     """
     Allocate a new fuel quota for a vehicle.
@@ -43,7 +47,7 @@ async def create_quota(quota: QuotaCreate):
             response_model=List[QuotaResponse],
             summary="List all quotas",
             tags=["Quotas"],
-            dependencies=[Depends(admin_only)])
+            dependencies=[Depends(auth_admin)])
 async def list_quotas():
     """
     Retrieve all fuel quota records.
@@ -57,7 +61,7 @@ async def list_quotas():
             response_model=QuotaResponse,
             summary="Get quota by ID",
             tags=["Quotas"],
-            dependencies=[Depends(admin_only)])
+            dependencies=[Depends(auth_all)])
 async def get_quota(id: str):
     """
     Retrieve a specific quota record by its ID.
@@ -72,60 +76,34 @@ async def get_quota(id: str):
     quota["_id"] = str(quota["_id"])
     return quota
 
-@router.put("/{id}", 
+@router.get("/citizen/{citizen_id}", 
             response_model=QuotaResponse,
-            summary="Update quota details",
+            summary="Get citizen quota",
             tags=["Quotas"],
-            dependencies=[Depends(admin_only)])
-async def update_quota(id: str, quota_update: QuotaUpdate):
+            dependencies=[Depends(auth_all)])
+async def get_citizen_quota(citizen_id: str):
     """
-    Update an existing fuel quota record.
+    Retrieve quota details for a specific citizen's vehicle.
+    This implementation assume 1-to-1 for simplicity or returns the latest vehicle's quota.
     """
-    if not ObjectId.is_valid(id):
-        raise HTTPException(status_code=400, detail="Invalid ID format")
+    # Find vehicles for this citizen
+    vehicles = await vehicle_collection.find({"citizenId": citizen_id}).to_list(1)
+    if not vehicles:
+        raise HTTPException(status_code=404, detail="No vehicles found for this citizen")
     
-    update_data = {k: v for k, v in quota_update.model_dump().items() if v is not None}
+    latest_vehicle_id = str(vehicles[0]["_id"])
+    quota = await collection.find_one({"vehicleId": latest_vehicle_id})
+    if not quota:
+         raise HTTPException(status_code=404, detail="Quota not found for the vehicle")
     
-    if "vehicleId" in update_data:
-        if not ObjectId.is_valid(update_data["vehicleId"]):
-            raise HTTPException(status_code=400, detail="Invalid vehicleId format")
-        vehicle = await vehicle_collection.find_one({"_id": ObjectId(update_data["vehicleId"])})
-        if not vehicle:
-            raise HTTPException(status_code=404, detail="Vehicle not found")
-
-    if len(update_data) >= 1:
-        update_result = await collection.update_one(
-            {"_id": ObjectId(id)}, {"$set": update_data}
-        )
-        if update_result.matched_count == 0:
-            raise HTTPException(status_code=404, detail=f"Quota with id {id} not found")
-
-    updated_quota = await collection.find_one({"_id": ObjectId(id)})
-    updated_quota["_id"] = str(updated_quota["_id"])
-    return updated_quota
-
-@router.delete("/{id}", 
-               status_code=status.HTTP_204_NO_CONTENT,
-               summary="Delete a quota record",
-               tags=["Quotas"],
-               dependencies=[Depends(admin_only)])
-async def delete_quota(id: str):
-    """
-    Remove a fuel quota record from the system.
-    """
-    if not ObjectId.is_valid(id):
-        raise HTTPException(status_code=400, detail="Invalid ID format")
-    
-    delete_result = await collection.delete_one({"_id": ObjectId(id)})
-    if delete_result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail=f"Quota with id {id} not found")
-    return None
+    quota["_id"] = str(quota["_id"])
+    return quota
 
 @router.put("/renew-all", 
             status_code=status.HTTP_200_OK,
             summary="Renew all vehicle quotas",
             tags=["Quotas"],
-            dependencies=[Depends(admin_only)])
+            dependencies=[Depends(auth_admin)])
 async def renew_all_quotas():
     """
     Renew fuel quotas for all registered vehicles.
@@ -178,3 +156,52 @@ async def renew_all_quotas():
         renewed_count += 1
         
     return {"message": f"Successfully renewed quotas for {renewed_count} vehicles", "weekStartDate": current_week_start}
+
+@router.put("/{id}", 
+            response_model=QuotaResponse,
+            summary="Update quota details",
+            tags=["Quotas"],
+            dependencies=[Depends(auth_admin)])
+async def update_quota(id: str, quota_update: QuotaUpdate):
+    """
+    Update an existing fuel quota record.
+    """
+    if not ObjectId.is_valid(id):
+        raise HTTPException(status_code=400, detail="Invalid ID format")
+    
+    update_data = {k: v for k, v in quota_update.model_dump().items() if v is not None}
+    
+    if "vehicleId" in update_data:
+        if not ObjectId.is_valid(update_data["vehicleId"]):
+            raise HTTPException(status_code=400, detail="Invalid vehicleId format")
+        vehicle = await vehicle_collection.find_one({"_id": ObjectId(update_data["vehicleId"])})
+        if not vehicle:
+            raise HTTPException(status_code=404, detail="Vehicle not found")
+
+    if len(update_data) >= 1:
+        update_result = await collection.update_one(
+            {"_id": ObjectId(id)}, {"$set": update_data}
+        )
+        if update_result.matched_count == 0:
+            raise HTTPException(status_code=404, detail=f"Quota with id {id} not found")
+
+    updated_quota = await collection.find_one({"_id": ObjectId(id)})
+    updated_quota["_id"] = str(updated_quota["_id"])
+    return updated_quota
+
+@router.delete("/{id}", 
+               status_code=status.HTTP_204_NO_CONTENT,
+               summary="Delete a quota record",
+               tags=["Quotas"],
+               dependencies=[Depends(auth_admin)])
+async def delete_quota(id: str):
+    """
+    Remove a fuel quota record from the system.
+    """
+    if not ObjectId.is_valid(id):
+        raise HTTPException(status_code=400, detail="Invalid ID format")
+    
+    delete_result = await collection.delete_one({"_id": ObjectId(id)})
+    if delete_result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail=f"Quota with id {id} not found")
+    return None

@@ -1,75 +1,64 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request, Depends
+from fastapi.security import HTTPBearer
 from services.citizen_vehicle_services import QuotaService
 from models.quota import QuotaResponse, QuotaUpdate, QuotaCreate
+from utils.auth import role_required
 from typing import List
 
 router = APIRouter()
 service = QuotaService()
+security = HTTPBearer()
 
 @router.get("/", 
             response_model=List[QuotaResponse],
             summary="List all quotas",
-            tags=["Quotas"])
-async def get_quotas():
-    """
-    Retrieve all fuel quota records via the gateway.
-    """
-    return await service.get_all()
+            tags=["Quotas"],
+            dependencies=[Depends(role_required(["admin"])), Depends(security)])
+async def get_quotas(request: Request):
+    return await service.get_all(request)
 
-@router.get("/{quota_id}", 
+@router.get("/{id}", 
             response_model=QuotaResponse,
             summary="Get quota by ID",
-            tags=["Quotas"])
-async def get_quota(quota_id: str):
-    """
-    Retrieve a specific quota record by its ID via the gateway.
-    """
-    return await service.get_by_id(quota_id)
+            tags=["Quotas"],
+            dependencies=[Depends(role_required(["admin", "citizen", "station_operator"])), Depends(security)])
+async def get_quota(id: str, request: Request):
+    return await service.get_by_id(id, request)
 
 @router.get("/citizen/{citizen_id}", 
-            response_model=QuotaResponse,
-            summary="Get citizen quota",
-            tags=["Quotas"])
-async def get_citizen_quota(citizen_id: str):
-    """
-    Retrieve quota details for a specific citizen's vehicle via the gateway.
-    """
-    return await service.get_by_citizen(citizen_id)
+            response_model=List[QuotaResponse],
+            summary="List quotas by citizen",
+            tags=["Quotas"],
+            dependencies=[Depends(role_required(["admin", "citizen"])), Depends(security)])
+async def get_by_citizen(citizen_id: str, request: Request):
+    return await service.get_by_citizen(citizen_id, request)
 
 @router.post("/", 
-             response_model=QuotaResponse,
-             summary="Create a fuel quota",
-             tags=["Quotas"])
-async def create_quota(quota: QuotaCreate):
-    """
-    Allocate a new fuel quota via the gateway.
-    """
-    return await service.create(quota.model_dump())
+             response_model=QuotaResponse, 
+             summary="Manually create a quota",
+             tags=["Quotas"],
+             dependencies=[Depends(role_required(["admin"])), Depends(security)])
+async def create_quota(quota: QuotaCreate, request: Request):
+    return await service.create(quota.model_dump(), request)
 
-@router.put("/renew-all",
-            summary="Renew all vehicle quotas",
-            tags=["Quotas"])
-async def renew_all_quotas():
-    """
-    Trigger manual renewal of all quotas via the gateway.
-    """
-    return await service.renew_all()
+@router.put("/renew-all", 
+            summary="Renew all quotas for the new month",
+            tags=["Quotas"],
+            dependencies=[Depends(role_required(["admin"])), Depends(security)])
+async def renew_all(request: Request):
+    return await service.renew_all(request)
 
-@router.put("/{quota_id}",
+@router.put("/{id}", 
             response_model=QuotaResponse,
             summary="Update quota details",
-            tags=["Quotas"])
-async def update_quota(quota_id: str, quota: QuotaUpdate):
-    """
-    Update an existing fuel quota record via the gateway.
-    """
-    return await service.update(quota_id, quota.model_dump())
+            tags=["Quotas"],
+            dependencies=[Depends(role_required(["admin"])), Depends(security)])
+async def update_quota(id: str, quota: QuotaUpdate, request: Request):
+    return await service.update(id, quota.model_dump(), request)
 
-@router.delete("/{quota_id}",
-               summary="Delete a quota record",
-               tags=["Quotas"])
-async def delete_quota(quota_id: str):
-    """
-    Remove a fuel quota record from the system via the gateway.
-    """
-    return await service.delete(quota_id)
+@router.delete("/{id}", 
+               summary="Delete a quota",
+               tags=["Quotas"],
+               dependencies=[Depends(role_required(["admin"])), Depends(security)])
+async def delete_quota(id: str, request: Request):
+    return await service.delete(id, request)

@@ -5,8 +5,12 @@ from database.mongo import get_database
 from models.vehicle import VehicleCreate, VehicleUpdate, VehicleResponse
 from utils.auth import RoleChecker
 
-# Shared role checker for general access
-auth_both = RoleChecker(["system admin", "user"])
+# Shared role checkers
+auth_admin = RoleChecker(["admin"])
+auth_citizen = RoleChecker(["citizen"])
+auth_operator = RoleChecker(["station_operator"])
+auth_staff = RoleChecker(["admin", "station_operator"])
+auth_all = RoleChecker(["admin", "station_operator", "citizen"])
 
 router = APIRouter()
 db = get_database()
@@ -17,7 +21,8 @@ citizen_collection = db["citizens"]
              response_model=VehicleResponse, 
              status_code=status.HTTP_201_CREATED,
              summary="Register a new vehicle",
-             tags=["Vehicles"])
+             tags=["Vehicles"],
+             dependencies=[Depends(auth_all)]) # Changed from open to auth_all to ensure we have a user context
 async def create_vehicle(vehicle: VehicleCreate):
     """
     Register a vehicle for a citizen. 
@@ -67,7 +72,7 @@ async def create_vehicle(vehicle: VehicleCreate):
             response_model=List[VehicleResponse],
             summary="List all vehicles",
             tags=["Vehicles"],
-            dependencies=[Depends(auth_both)])
+            dependencies=[Depends(auth_admin)])
 async def list_vehicles():
     """
     Retrieve a list of all registered vehicles.
@@ -81,7 +86,7 @@ async def list_vehicles():
             response_model=VehicleResponse,
             summary="Get vehicle by ID",
             tags=["Vehicles"],
-            dependencies=[Depends(auth_both)])
+            dependencies=[Depends(auth_all)])
 async def get_vehicle(id: str):
     """
     Retrieve details of a specific vehicle by its ID.
@@ -100,7 +105,7 @@ async def get_vehicle(id: str):
             response_model=VehicleResponse,
             summary="Update vehicle details",
             tags=["Vehicles"],
-            dependencies=[Depends(auth_both)])
+            dependencies=[Depends(auth_all)])
 async def update_vehicle(id: str, vehicle_update: VehicleUpdate):
     """
     Update information for an existing vehicle.
@@ -132,7 +137,7 @@ async def update_vehicle(id: str, vehicle_update: VehicleUpdate):
                status_code=status.HTTP_204_NO_CONTENT,
                summary="Delete a vehicle",
                tags=["Vehicles"],
-               dependencies=[Depends(auth_both)])
+               dependencies=[Depends(auth_admin)])
 async def delete_vehicle(id: str):
     """
     Remove a vehicle from the system.

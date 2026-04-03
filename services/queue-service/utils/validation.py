@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 
 CITIZEN_VEHICLE_SERVICE_URL = os.getenv("CITIZEN_VEHICLE_SERVICE_URL", "http://localhost:8000")
 
-async def validate_vehicle_and_quota(vehicle_id: str, requested_liters: float):
+async def validate_vehicle_and_quota(vehicle_id: str, requested_liters: float, headers: dict = None):
     """
     Validates if the vehicle exists and has enough fuel quota.
     Calls the Citizen & Vehicle Service.
@@ -12,7 +12,7 @@ async def validate_vehicle_and_quota(vehicle_id: str, requested_liters: float):
     async with httpx.AsyncClient() as client:
         # 1. Check if vehicle exists
         try:
-            vehicle_response = await client.get(f"{CITIZEN_VEHICLE_SERVICE_URL}/vehicles/{vehicle_id}")
+            vehicle_response = await client.get(f"{CITIZEN_VEHICLE_SERVICE_URL}/vehicles/{vehicle_id}", headers=headers)
             if vehicle_response.status_code == 404:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -34,7 +34,7 @@ async def validate_vehicle_and_quota(vehicle_id: str, requested_liters: float):
         
         try:
             # Reusing the logic from the existing service's expected structure
-            quota_response = await client.get(f"{CITIZEN_VEHICLE_SERVICE_URL}/quotas/vehicle/{vehicle_id}")
+            quota_response = await client.get(f"{CITIZEN_VEHICLE_SERVICE_URL}/quotas/vehicle/{vehicle_id}", headers=headers)
             if quota_response.status_code == 404:
                  # If no specific quota record, maybe it's not allocated
                  raise HTTPException(
