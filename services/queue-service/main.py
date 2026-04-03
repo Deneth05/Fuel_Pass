@@ -34,4 +34,4 @@ async def shutdown_db_client():
 if __name__ == "__main__":
     import uvicorn
     # Citizen & Vehicle service uses 8001, Station service uses 8002, so we use 8003
-    uvicorn.run("main:app", host="0.0.0.0", port=8003, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8003, reload=False)

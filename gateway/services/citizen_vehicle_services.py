@@ -3,7 +3,7 @@ from fastapi import Request
 from typing import Optional
 
 class CitizenService:
-    BASE_URL = "http://localhost:8001/citizens"
+    BASE_URL = "http://127.0.0.1:8001/citizens"
     
     async def get_all(self, request: Optional[Request] = None):
         return await forward_request("GET", f"{self.BASE_URL}/", request=request)
@@ -21,7 +21,7 @@ class CitizenService:
         return await forward_request("DELETE", f"{self.BASE_URL}/{citizen_id}", request=request)
 
 class VehicleService:
-    BASE_URL = "http://localhost:8001/vehicles"
+    BASE_URL = "http://127.0.0.1:8001/vehicles"
     
     async def get_all(self, request: Optional[Request] = None):
         return await forward_request("GET", f"{self.BASE_URL}/", request=request)
@@ -39,7 +39,7 @@ class VehicleService:
         return await forward_request("DELETE", f"{self.BASE_URL}/{vehicle_id}", request=request)
 
 class QuotaService:
-    BASE_URL = "http://localhost:8001/quotas"
+    BASE_URL = "http://127.0.0.1:8006/quotas"
     
     async def get_all(self, request: Optional[Request] = None):
         return await forward_request("GET", f"{self.BASE_URL}/", request=request)
@@ -63,7 +63,7 @@ class QuotaService:
         return await forward_request("PUT", f"{self.BASE_URL}/renew-all", request=request)
 
 class VehicleTypeQuotaService:
-    BASE_URL = "http://localhost:8001/vehicle-type-quotas"
+    BASE_URL = "http://127.0.0.1:8006/vehicle-type-quotas"
     
     async def get_all(self, request: Optional[Request] = None):
         return await forward_request("GET", f"{self.BASE_URL}/", request=request)
@@ -81,7 +81,7 @@ class VehicleTypeQuotaService:
         return await forward_request("DELETE", f"{self.BASE_URL}/{vehicle_type}", request=request)
 
 class AuthService:
-    BASE_URL = "http://localhost:8001/auth"
+    BASE_URL = "http://127.0.0.1:8001/auth"
     
     async def login(self, data: dict, request: Optional[Request] = None):
         return await forward_request("POST", f"{self.BASE_URL}/login", json=data, request=request)
@@ -91,4 +91,4 @@ class AuthService:
 
     async def register(self, data: dict, request: Optional[Request] = None):
         # Forward registration to the citizen create endpoint in the microservice
-        return await forward_request("POST", "http://localhost:8001/citizens/", json=data, request=request)
+        return await forward_request("POST", "http://127.0.0.1:8001/citizens/", json=data, request=request)

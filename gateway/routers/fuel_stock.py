@@ -17,7 +17,7 @@ security = HTTPBearer()
              tags=["Fuel Stock"],
              dependencies=[Depends(role_required(["admin", "station_operator"])), Depends(security)])
 async def create_fuel_stock(stock: FuelStockCreate, request: Request):
-    return await service.create(stock.model_dump(), request)
+    return await service.create(stock.model_dump(mode="json"), request)
 
 @router.get("/", 
             response_model=List[FuelStockResponse],
@@ -41,7 +41,7 @@ async def get_fuel_stock(stock_id: str, request: Request):
             tags=["Fuel Stock"],
             dependencies=[Depends(role_required(["admin", "station_operator"])), Depends(security)])
 async def update_fuel_stock(stock_id: str, stock_update: FuelStockUpdate, request: Request):
-    return await service.update(stock_id, stock_update.model_dump(exclude_none=True), request)
+    return await service.update(stock_id, stock_update.model_dump(mode="json", exclude_none=True), request)
 
 @router.delete("/{stock_id}", 
                status_code=status.HTTP_204_NO_CONTENT,
@@ -63,6 +63,6 @@ async def get_station_fuel_stock(station_id: str, request: Request):
               response_model=FuelStockResponse,
               summary="Deduct fuel from stock",
               tags=["Fuel Stock"],
-              dependencies=[Depends(role_required(["admin", "station_operator"])), Depends(security)])
+              dependencies=[Depends(role_required(["admin"])), Depends(security)])
 async def deduct_fuel(payload: FuelStockDeduct, request: Request):
-    return await service.deduct(payload.model_dump(), request)
+    return await service.deduct(payload.model_dump(mode="json"), request)

@@ -23,8 +23,8 @@ from utils.auth import RoleChecker
 
 # Shared role checkers
 auth_admin = RoleChecker(["admin"])
-auth_staff = RoleChecker(["admin", "station_operator"])
-auth_all = RoleChecker(["admin", "station_operator", "citizen"])
+auth_staff = RoleChecker(["admin"])
+auth_all = RoleChecker(["admin", "citizen"])
 
 
 router = APIRouter()
@@ -68,10 +68,10 @@ async def create_fuel_stock(payload: FuelStockCreate, db=Depends(get_database)):
     if existing:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="FuelStock already exists for this day")
 
-    result = await db["fuelStocks"].insert_one(stock_dict)
-    created = await db["fuelStocks"].find_one({"_id": result.inserted_id})
-    created["_id"] = str(created["_id"])
-    return created
+    await db["fuelStocks"].insert_one(stock_dict)
+    # MongoDB adds _id to the dict in-place during insert_one
+    stock_dict["_id"] = str(stock_dict["_id"])
+    return stock_dict
 
 
 @router.get(

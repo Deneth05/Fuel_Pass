@@ -23,14 +23,14 @@ async def forward_request(method: str, url: str, request: Request = None, **kwar
             
     kwargs["headers"] = headers
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(trust_env=False, follow_redirects=True, timeout=30.0) as client:
         try:
             logger.info(f"Forwarding {method} request to {url}")
             response = await client.request(method, url, **kwargs)
             
             # Check for errors from the microservice
             if response.status_code >= 400:
-                logger.error(f"Microservice error: {response.status_code} - {response.text}")
+                logger.error(f"Microservice error {response.status_code} from {url}: {response.text}")
                 try:
                     detail = response.json()
                 except:
@@ -40,8 +40,8 @@ async def forward_request(method: str, url: str, request: Request = None, **kwar
             return response.json() if response.status_code != 204 else {}
             
         except httpx.RequestError as exc:
-            logger.error(f"HTTP Request failed: {exc}")
-            raise HTTPException(status_code=503, detail=f"Service Unavailable: {str(exc)}")
+            logger.error(f"HTTP Request failed to {url}: {exc!r}")
+            raise HTTPException(status_code=503, detail=f"Service Unavailable logic failed for {url}: {type(exc).__name__} - {str(exc)}")
         except HTTPException as exc:
             raise exc
         except Exception as exc:

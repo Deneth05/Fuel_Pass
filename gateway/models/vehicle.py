@@ -19,6 +19,7 @@ class VehicleBase(BaseModel):
     citizenId: str = Field(..., description="Owner's citizen ID", example="65e1234567890abcdef12345")
     vehicleNumber: str = Field(..., description="License plate number", example="ABC-1234")
     fuelType: FuelType = Field(..., description="Fuel type", example="Petrol")
+    vehicleType: VehicleType = Field(..., description="Type of the vehicle", example="Car")
 
 class VehicleCreate(VehicleBase):
     pass

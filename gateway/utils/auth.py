@@ -18,6 +18,8 @@ def decode_token(token: str):
     except jwt.InvalidTokenError:
         return None
 
+from fastapi.responses import JSONResponse
+
 async def auth_middleware(request: Request, call_next):
     # Public routes
     public_paths = [
@@ -30,7 +32,10 @@ async def auth_middleware(request: Request, call_next):
     ]
     
     path = request.url.path.rstrip("/")
-    if any(path.startswith(p.rstrip("/")) for p in public_paths):
+    if not path: # Root path
+        path = "/"
+        
+    if path in public_paths:
         return await call_next(request)
 
     # Citizen registration is public
@@ -39,21 +44,33 @@ async def auth_middleware(request: Request, call_next):
 
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Authorization header missing")
+        return JSONResponse(
+            status_code=401,
+            content={"detail": "Authorization header missing"}
+        )
 
-    token = auth_header.split(" ")[1]
-    payload = decode_token(token)
-    if not payload:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    try:
+        token = auth_header.split(" ")[1]
+        payload = decode_token(token)
+        if not payload:
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "Invalid or expired token"}
+            )
 
-    # Add user info to request state
-    request.state.user_id = payload.get("sub")
-    request.state.role = payload.get("role")
-    request.state.nic = payload.get("nic")
+        # Add user info to request state
+        request.state.user_id = payload.get("sub")
+        request.state.role = payload.get("role")
+        request.state.nic = payload.get("nic")
 
-    # Proceed with request
-    response = await call_next(request)
-    return response
+        # Proceed with request
+        response = await call_next(request)
+        return response
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Gateway Middleware Error: {str(e)}"}
+        )
 
 def role_required(allowed_roles: List[str]):
     def decorator(request: Request):

@@ -9,7 +9,7 @@ from utils.auth import RoleChecker
 
 # Shared role checkers
 auth_admin = RoleChecker(["admin"])
-auth_all = RoleChecker(["admin", "station_operator", "citizen"])
+auth_all = RoleChecker(["admin", "citizen"])
 
 
 router = APIRouter()
@@ -20,16 +20,14 @@ router = APIRouter()
     response_model=StationResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create a new station",
-    tags=["Stations"],
-    dependencies=[Depends(auth_admin)]
+    tags=["Stations"]
 )
 async def create_station(station: StationCreate, db=Depends(get_database)):
     station_dict = station.model_dump()
-
-    result = await db["stations"].insert_one(station_dict)
-    created = await db["stations"].find_one({"_id": result.inserted_id})
-    created["_id"] = str(created["_id"])
-    return created
+    await db["stations"].insert_one(station_dict)
+    # MongoDB adds _id to the dict in-place during insert_one
+    station_dict["_id"] = str(station_dict["_id"])
+    return station_dict
 
 
 @router.get(

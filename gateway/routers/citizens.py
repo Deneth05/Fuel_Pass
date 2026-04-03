@@ -21,7 +21,7 @@ async def get_citizens(request: Request):
             response_model=CitizenResponse,
             summary="Get citizen by ID",
             tags=["Citizens"],
-            dependencies=[Depends(role_required(["admin", "station_operator", "citizen"])), Depends(security)])
+            dependencies=[Depends(role_required(["admin", "citizen"])), Depends(security)])
 async def get_citizen(citizen_id: str, request: Request):
     return await service.get_by_id(citizen_id, request)
 
@@ -30,7 +30,7 @@ async def get_citizen(citizen_id: str, request: Request):
              summary="Create a new citizen",
              tags=["Citizens"])
 async def create_citizen(citizen: CitizenCreate, request: Request):
-    return await service.create(citizen.model_dump(), request)
+    return await service.create(citizen.model_dump(mode="json"), request)
 
 @router.put("/{citizen_id}",
             response_model=CitizenResponse,
@@ -38,7 +38,7 @@ async def create_citizen(citizen: CitizenCreate, request: Request):
             tags=["Citizens"],
             dependencies=[Depends(role_required(["admin", "citizen"])), Depends(security)])
 async def update_citizen(citizen_id: str, citizen: CitizenUpdate, request: Request):
-    return await service.update(citizen_id, citizen.model_dump(), request)
+    return await service.update(citizen_id, citizen.model_dump(mode="json"), request)
 
 @router.delete("/{citizen_id}",
                summary="Delete a citizen",

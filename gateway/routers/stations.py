@@ -15,7 +15,7 @@ security = HTTPBearer()
              summary="Register a new station (Open)",
              tags=["Stations"]) # Public registration
 async def register_station(station: StationCreate, request: Request):
-    return await service.create(station.model_dump(), request)
+    return await service.create(station.model_dump(mode="json"), request)
 
 @router.post("/", 
              response_model=StationResponse,
@@ -24,7 +24,7 @@ async def register_station(station: StationCreate, request: Request):
              tags=["Stations"],
              dependencies=[Depends(role_required(["admin"])), Depends(security)])
 async def create_station(station: StationCreate, request: Request):
-    return await service.create(station.model_dump(), request)
+    return await service.create(station.model_dump(mode="json"), request)
 
 @router.get("/", 
             response_model=List[StationResponse],
@@ -46,9 +46,9 @@ async def get_station(station_id: str, request: Request):
             response_model=StationResponse,
             summary="Update station details",
             tags=["Stations"],
-            dependencies=[Depends(role_required(["admin", "station_operator"])), Depends(security)])
+            dependencies=[Depends(role_required(["admin"])), Depends(security)])
 async def update_station(station_id: str, station_update: StationUpdate, request: Request):
-    return await service.update(station_id, station_update.model_dump(exclude_none=True), request)
+    return await service.update(station_id, station_update.model_dump(mode="json", exclude_none=True), request)
 
 @router.delete("/{station_id}", 
                status_code=status.HTTP_204_NO_CONTENT,

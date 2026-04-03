@@ -3,7 +3,7 @@ from fastapi import Request
 from typing import Optional
 
 class QueueService:
-    BASE_URL = "http://localhost:8003/queues"
+    BASE_URL = "http://127.0.0.1:8003/queues"
     
     async def get_all(self, request: Optional[Request] = None):
         return await forward_request("GET", f"{self.BASE_URL}/", request=request)
@@ -21,7 +21,7 @@ class QueueService:
         return await forward_request("DELETE", f"{self.BASE_URL}/{queue_id}", request=request)
 
 class TransactionService:
-    BASE_URL = "http://localhost:8004/transactions"
+    BASE_URL = "http://127.0.0.1:8004/transactions"
     
     async def get_all(self, request: Optional[Request] = None):
         return await forward_request("GET", f"{self.BASE_URL}/", request=request)
