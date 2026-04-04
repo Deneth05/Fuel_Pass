@@ -214,16 +214,32 @@ async def deduct_fuel_stock(payload: FuelStockDeduct, db=Depends(get_database)):
     if not fuel_type_supported(station, payload.fuelType):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="fuelType is not supported by this station")
 
-    stock_date = payload.date.isoformat() if payload.date is not None else utc_today_date().isoformat()
-
-    stock = await db["fuelStocks"].find_one(
-        {"stationId": payload.stationId, "fuelType": payload.fuelType, "date": stock_date}
-    )
-    if not stock:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="FuelStock for this station/fuelType/date not found",
+    if payload.date is not None:
+        # Specific date requested — use that exact record
+        stock = await db["fuelStocks"].find_one(
+            {"stationId": payload.stationId, "fuelType": payload.fuelType, "date": payload.date.isoformat()}
         )
+        if not stock:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"FuelStock for this station/fuelType on {payload.date.isoformat()} not found",
+            )
+    else:
+        # No date specified — find the most recent stock record with enough available liters
+        cursor = db["fuelStocks"].find(
+            {
+                "stationId": payload.stationId,
+                "fuelType": payload.fuelType,
+                "availableLiters": {"$gte": payload.liters},
+            }
+        ).sort("date", -1).limit(1)
+        stocks = await cursor.to_list(1)
+        stock = stocks[0] if stocks else None
+        if not stock:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No FuelStock record with sufficient available liters found for this station/fuelType",
+            )
 
     if stock.get("availableLiters", 0) < payload.liters:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Not enough fuel available")
