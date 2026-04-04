@@ -55,6 +55,21 @@ After activating the virtual environment in your terminal, navigate to the servi
 | **Transaction Service**| `services/transaction-service/` | `python main.py` | `8005` |
 | **Quota Service** | `services/quota-service/` | `python main.py` | `8006` |
 
+#### Detailed Steps for Quota Service
+1. **Navigate**: Open a new terminal and go to the quota service directory:
+   ```powershell
+   cd services/quota-service
+   ```
+2. **Setup**: (Optional) Ensure dependencies are installed:
+   ```powershell
+   pip install -r requirements.txt
+   ```
+3. **Run**: Start the service using Python:
+   ```powershell
+   python main.py
+   ```
+4. **Verify**: Access the API documentation at `http://localhost:8006/api-docs`.
+
 > [!TIP]
 > Each service has its own Swagger documentation at `http://localhost:<PORT>/api-docs`. The unified documentation is available at `http://localhost:8000/api-docs`.
 
