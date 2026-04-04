@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 from typing import Optional
 from enum import Enum
@@ -18,9 +18,15 @@ class QueueUpdate(BaseModel):
     requestedLiters: Optional[float] = Field(None, gt=0)
 
 class QueueResponse(BaseModel):
-    id: str = Field(..., description="Queue entry ID")
+    id: str = Field(alias="_id", description="Queue entry ID")
     stationId: str = Field(..., description="Station ID")
     vehicleId: str = Field(..., description="Vehicle ID")
     requestedLiters: float = Field(..., description="Requested liters")
     status: QueueStatus = Field(..., description="Queue status")
     joinedAt: datetime = Field(..., description="Time joined")
+    
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True
+    )
+

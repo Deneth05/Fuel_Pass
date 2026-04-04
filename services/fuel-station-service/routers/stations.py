@@ -23,6 +23,14 @@ router = APIRouter()
     tags=["Stations"]
 )
 async def create_station(station: StationCreate, db=Depends(get_database)):
+    # Check if station with the same registration number already exists
+    existing_station = await db["stations"].find_one({"registrationNumber": station.registrationNumber})
+    if existing_station:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Station with this registration number already exists"
+        )
+
     station_dict = station.model_dump()
     await db["stations"].insert_one(station_dict)
     # MongoDB adds _id to the dict in-place during insert_one

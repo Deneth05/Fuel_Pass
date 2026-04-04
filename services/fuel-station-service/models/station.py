@@ -22,6 +22,7 @@ class PyObjectId(ObjectId):
 
 
 class StationBase(BaseModel):
+    registrationNumber: Optional[str] = Field(None, min_length=1, max_length=50, example="REG123456", description="Unique registration number of the station")
     name: str = Field(..., min_length=1, max_length=100, example="Fuel Station - Downtown")
     location: str = Field(..., min_length=1, max_length=250, example="123 Main St, Springfield")
     fuelTypes: List[str] = Field(
@@ -48,10 +49,11 @@ class StationBase(BaseModel):
 
 
 class StationCreate(StationBase):
-    pass
+    registrationNumber: str = Field(..., min_length=1, max_length=50, example="REG123456")
 
 
 class StationUpdate(BaseModel):
+    registrationNumber: Optional[str] = Field(None, min_length=1, max_length=50, example="REG654321")
     name: Optional[str] = Field(None, min_length=1, max_length=100, example="Updated Station Name")
     location: Optional[str] = Field(None, min_length=1, max_length=250, example="Updated location")
     fuelTypes: Optional[List[str]] = Field(
