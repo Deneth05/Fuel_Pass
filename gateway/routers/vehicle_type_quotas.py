@@ -11,14 +11,14 @@ security = HTTPBearer()
 
 @router.post("/", 
              response_model=VehicleTypeQuotaResponse, 
-             summary="Create or update a vehicle type quota",
+             summary="Create a vehicle type quota",
              tags=["Vehicle Type Quotas"],
              dependencies=[Depends(role_required(["admin"])), Depends(security)])
 async def create_vehicle_type_quota(quota: VehicleTypeQuotaCreate, request: Request):
     """
-    Define the fuel liters per week for a specific vehicle type via the gateway.
+    Create a new vehicle type quota definition.
     """
-    return await service.create_or_update(quota.model_dump(mode="json"), request)
+    return await service.create(quota.model_dump(mode="json"), request)
 
 @router.get("/", 
             response_model=List[VehicleTypeQuotaResponse],

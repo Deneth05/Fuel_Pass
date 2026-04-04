@@ -22,26 +22,21 @@ logging.basicConfig(level=logging.INFO)
 @router.post("/", 
              response_model=VehicleTypeQuotaResponse, 
              status_code=status.HTTP_201_CREATED,
-             summary="Create or update a vehicle type quota",
+             summary="Create a new vehicle type quota",
              tags=["Vehicle Type Quotas"],
              dependencies=[Depends(auth_admin)])
 async def create_vehicle_type_quota(quota: VehicleTypeQuotaCreate):
-    logger.info(f"Received request to create/update quota for: {quota.vehicleType}")
+    logger.info(f"Received request to create quota for: {quota.vehicleType}")
     existing = await collection.find_one({"vehicleType": quota.vehicleType.value if hasattr(quota.vehicleType, 'value') else quota.vehicleType})
     if existing:
-        await collection.update_one(
-            {"_id": existing["_id"]},
-            {"$set": {"litersPerWeek": quota.litersPerWeek}}
-        )
-        updated = await collection.find_one({"_id": existing["_id"]})
-        updated["_id"] = str(updated["_id"])
-        return updated
+        raise HTTPException(status_code=400, detail="Vehicle type quota already exists")
 
     quota_dict = quota.model_dump()
     result = await collection.insert_one(quota_dict)
     created = await collection.find_one({"_id": result.inserted_id})
     created["_id"] = str(created["_id"])
     return created
+
 
 @router.get("/", 
             response_model=List[VehicleTypeQuotaResponse],

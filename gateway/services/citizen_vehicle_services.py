@@ -71,7 +71,7 @@ class VehicleTypeQuotaService:
     async def get_by_type(self, vehicle_type: str, request: Optional[Request] = None):
         return await forward_request("GET", f"{self.BASE_URL}/{vehicle_type}", request=request)
 
-    async def create_or_update(self, data: dict, request: Optional[Request] = None):
+    async def create(self, data: dict, request: Optional[Request] = None):
         return await forward_request("POST", f"{self.BASE_URL}/", json=data, request=request)
 
     async def update(self, vehicle_type: str, data: dict, request: Optional[Request] = None):
