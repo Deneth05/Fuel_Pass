@@ -1,6 +1,8 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 from bson import ObjectId
+import os
+import httpx
 from database.mongo import get_database
 from models.vehicle import VehicleCreate, VehicleUpdate, VehicleResponse
 from utils.auth import RoleChecker
@@ -15,6 +17,8 @@ router = APIRouter()
 db = get_database()
 collection = db["vehicles"]
 citizen_collection = db["citizens"]
+
+QUOTA_SERVICE_URL = os.getenv("QUOTA_SERVICE_URL", "http://127.0.0.1:8006")
 
 @router.post("/", 
              response_model=VehicleResponse, 
@@ -35,6 +39,14 @@ async def create_vehicle(vehicle: VehicleCreate):
     if not citizen:
         raise HTTPException(status_code=404, detail="Citizen not found")
 
+    # Check if vehicle with the same number already exists
+    existing_vehicle = await collection.find_one({"vehicleNumber": vehicle.vehicleNumber})
+    if existing_vehicle:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Vehicle with this number already registered"
+        )
+
     vehicle_dict = vehicle.model_dump()
     result = await collection.insert_one(vehicle_dict)
     vehicle_id = str(result.inserted_id)
@@ -45,23 +57,29 @@ async def create_vehicle(vehicle: VehicleCreate):
         {"$push": {"registeredVehicles": vehicle_id}}
     )
 
-    # Auto-assign quota
+    # Auto-assign quota by calling Quota Service
     from utils.quota_manager import get_week_start_date
-    type_quota_collection = db["vehicle_type_quotas"]
-    quota_collection = db["quotas"]
     
-    type_quota = await type_quota_collection.find_one({"vehicleType": vehicle.vehicleType})
-    allocated_liters = 0.0
-    if type_quota:
-        allocated_liters = type_quota["litersPerWeek"]
-    
-    initial_quota = {
-        "vehicleId": vehicle_id,
-        "weekStartDate": get_week_start_date(),
-        "allocatedLiters": allocated_liters,
-        "consumedLiters": 0.0
-    }
-    await quota_collection.insert_one(initial_quota)
+    try:
+        async with httpx.AsyncClient() as client:
+            # 1. Get quota amount for this vehicle type
+            type_quota_resp = await client.get(f"{QUOTA_SERVICE_URL}/vehicle-type-quotas/{vehicle.vehicleType}")
+            allocated_liters = 0.0
+            if type_quota_resp.status_code == 200:
+                allocated_liters = type_quota_resp.json().get("litersPerWeek", 0.0)
+            
+            # 2. Create initial quota record
+            initial_quota = {
+                "vehicleId": vehicle_id,
+                "weekStartDate": get_week_start_date(),
+                "allocatedLiters": allocated_liters,
+                "consumedLiters": 0.0
+            }
+            await client.post(f"{QUOTA_SERVICE_URL}/quotas/", json=initial_quota)
+    except Exception as e:
+        # Log the error but don't fail vehicle creation
+        import logging
+        logging.error(f"Failed to auto-assign quota for vehicle {vehicle_id}: {str(e)}")
     
     created_vehicle = await collection.find_one({"_id": result.inserted_id})
     created_vehicle["_id"] = str(created_vehicle["_id"])

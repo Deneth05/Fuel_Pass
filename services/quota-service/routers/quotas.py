@@ -14,7 +14,10 @@ auth_all = RoleChecker(["admin", "citizen"])
 router = APIRouter()
 db = get_database()
 collection = db["quotas"]
-vehicle_collection = db["vehicles"] # Accessing vehicles for validation
+vehicle_collection = db["vehicles"]
+
+import logging
+logger = logging.getLogger("quota-service")
 
 @router.post("/", 
              response_model=QuotaResponse, 
@@ -49,19 +52,26 @@ async def list_quotas():
         q["_id"] = str(q["_id"])
     return quotas
 
-@router.get("/{id}", 
+@router.get("/vehicle/{vehicle_id}", 
             response_model=QuotaResponse,
-            summary="Get quota by ID",
+            summary="Get current week's quota for a vehicle",
             tags=["Quotas"],
             dependencies=[Depends(auth_all)])
-async def get_quota(id: str):
-    if not ObjectId.is_valid(id):
-        raise HTTPException(status_code=400, detail="Invalid ID format")
+async def get_vehicle_quota(vehicle_id: str):
+    logger.info(f"Checking quota for vehicle: {vehicle_id}")
+    from utils.quota_manager import get_week_start_date
+    current_week_start = get_week_start_date()
     
-    quota = await collection.find_one({"_id": ObjectId(id)})
-    if quota is None:
-        raise HTTPException(status_code=404, detail=f"Quota with id {id} not found")
+    quota = await collection.find_one({
+        "vehicleId": vehicle_id,
+        "weekStartDate": current_week_start
+    })
     
+    if not quota:
+        logger.warning(f"Quota not found for vehicle {vehicle_id} for week {current_week_start}")
+        raise HTTPException(status_code=404, detail=f"No quota record found for vehicle {vehicle_id} for the current week")
+    
+    logger.info(f"Quota found for vehicle {vehicle_id}: {quota.get('allocatedLiters')}L")
     quota["_id"] = str(quota["_id"])
     return quota
 
@@ -80,6 +90,22 @@ async def get_citizen_quota(citizen_id: str):
     quota = await collection.find_one({"vehicleId": latest_vehicle_id})
     if not quota:
          raise HTTPException(status_code=404, detail="Quota not found for the vehicle")
+    
+    quota["_id"] = str(quota["_id"])
+    return quota
+
+@router.get("/{id}", 
+            response_model=QuotaResponse,
+            summary="Get quota by ID",
+            tags=["Quotas"],
+            dependencies=[Depends(auth_all)])
+async def get_quota(id: str):
+    if not ObjectId.is_valid(id):
+        raise HTTPException(status_code=400, detail="Invalid ID format")
+    
+    quota = await collection.find_one({"_id": ObjectId(id)})
+    if quota is None:
+        raise HTTPException(status_code=404, detail=f"Quota with id {id} not found")
     
     quota["_id"] = str(quota["_id"])
     return quota

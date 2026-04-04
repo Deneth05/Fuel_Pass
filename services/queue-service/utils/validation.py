@@ -3,6 +3,7 @@ import httpx
 from fastapi import HTTPException, status
 
 CITIZEN_VEHICLE_SERVICE_URL = os.getenv("CITIZEN_VEHICLE_SERVICE_URL", "http://127.0.0.1:8001")
+QUOTA_SERVICE_URL = os.getenv("QUOTA_SERVICE_URL", "http://127.0.0.1:8006")
 
 async def validate_vehicle_and_quota(vehicle_id: str, requested_liters: float, headers: dict = None):
     """
@@ -33,10 +34,9 @@ async def validate_vehicle_and_quota(vehicle_id: str, requested_liters: float, h
         # Let's check the quota endpoint if it exists in citizen-vehicle-service.
         
         try:
-            # Reusing the logic from the existing service's expected structure
-            quota_response = await client.get(f"{CITIZEN_VEHICLE_SERVICE_URL}/quotas/vehicle/{vehicle_id}", headers=headers)
+            # Call the new Quota Service
+            quota_response = await client.get(f"{QUOTA_SERVICE_URL}/quotas/vehicle/{vehicle_id}", headers=headers)
             if quota_response.status_code == 404:
-                 # If no specific quota record, maybe it's not allocated
                  raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="No fuel quota allocated for this vehicle"
@@ -44,24 +44,26 @@ async def validate_vehicle_and_quota(vehicle_id: str, requested_liters: float, h
             quota_response.raise_for_status()
             quota_data = quota_response.json()
             
-            available_liters = quota_data.get("remainingLiters", 0)
+            allocated = quota_data.get("allocatedLiters", 0)
+            consumed = quota_data.get("consumedLiters", 0)
+            available_liters = allocated - consumed
+            
             if requested_liters > available_liters:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Insufficient fuel quota. Requested: {requested_liters}L, Available: {available_liters}L"
                 )
+        except HTTPException:
+            raise
         except httpx.HTTPStatusError as e:
-             if e.response.status_code != 404:
-                raise HTTPException(
-                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail=f"Error checking quota: {str(e)}"
-                )
-             else:
-                 raise HTTPException(status_code=400, detail="Quota information not found for vehicle")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"Error checking quota: {str(e)}"
+            )
         except httpx.HTTPError as e:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=f"Unable to reach Citizen & Vehicle Service for quota check: {str(e)}"
+                detail=f"Unable to reach Quota Service for quota check: {str(e)}"
             )
 
     return True
