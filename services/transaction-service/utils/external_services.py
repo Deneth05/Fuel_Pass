@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 CITIZEN_SERVICE_URL = os.getenv("CITIZEN_SERVICE_URL", "http://127.0.0.1:8001")
+QUOTA_SERVICE_URL = os.getenv("QUOTA_SERVICE_URL", "http://127.0.0.1:8006")
 STATION_SERVICE_URL = os.getenv("STATION_SERVICE_URL", "http://127.0.0.1:8002")
 QUEUE_SERVICE_URL = os.getenv("QUEUE_SERVICE_URL", "http://127.0.0.1:8003")
 
@@ -44,7 +45,7 @@ async def update_vehicle_quota(vehicle_id: str, liters: float, headers: dict = N
     async with httpx.AsyncClient(trust_env=False, timeout=20.0) as client:
         try:
             payload = {"amount": liters} 
-            url = f"{CITIZEN_SERVICE_URL}/quotas/vehicle/{vehicle_id}/deduct"
+            url = f"{QUOTA_SERVICE_URL}/quotas/vehicle/{vehicle_id}/deduct"
             print(f"DEBUG: Calling {url} with {payload}")
             response = await client.post(url, json=payload, headers=headers)
             print(f"DEBUG: Response from citizen-service: {response.status_code} - {response.text}")
